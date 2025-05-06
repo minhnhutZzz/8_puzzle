@@ -230,20 +230,27 @@ class EightPuzzle:
                     distance += abs(i - goal_i) + abs(j - goal_j)
         return distance
 
-    def greedy_search(self):
+    def greedy_search(self, timeout=10.0):
+        start_time = time.time()
         pq = []
         heapq.heappush(pq, (self.heuristic(self.initial), self.initial, []))
         visited = set()
         explored_states = []
 
         while pq:
+            if time.time() - start_time > timeout:
+                print("GBFS timeout after", timeout, "seconds")
+                return None, explored_states
+
             _, state, path = heapq.heappop(pq)
+            if state in visited:  # Kiểm tra visited ngay sau khi pop để bỏ qua nếu đã thăm
+                continue
+
             explored_states.append(state)
+            visited.add(state)
 
             if state == self.goal:
                 return path + [state], explored_states
-
-            visited.add(state)
 
             for neighbor in self.get_neighbors(state):
                 if neighbor not in visited:
@@ -251,23 +258,22 @@ class EightPuzzle:
 
         return None, explored_states
 
-    def a_star(self):
+    def a_star(self, timeout=10.0):
+        start_time = time.time()
         pq = []
         heapq.heappush(pq, (self.heuristic(self.initial), 0, self.initial, []))
-        visited = {}
         explored_states = []
 
         while pq:
+            if time.time() - start_time > timeout:
+                print("A* timeout after", timeout, "seconds")
+                return None, explored_states
+
             f, g, state, path = heapq.heappop(pq)
             explored_states.append(state)
 
             if state == self.goal:
                 return path + [state], explored_states
-
-            if state in visited and visited[state] <= g:
-                continue
-
-            visited[state] = g
 
             for neighbor in self.get_neighbors(state):
                 new_g = g + 1
@@ -276,20 +282,27 @@ class EightPuzzle:
 
         return None, explored_states
 
-    def ida_star(self):
+    def ida_star(self, timeout=10.0):
+        start_time = time.time()
         threshold = self.heuristic(self.initial)
         explored_states = []
+        iteration = 0
 
         while True:
-            visited = set()
-            result, new_threshold = self.ida_star_recursive(self.initial, [], 0, threshold, visited, explored_states)
+            if time.time() - start_time > timeout:
+                print("IDA* timeout after", timeout, "seconds")
+                return None, explored_states
+
+            iteration += 1
+            print(f"IDA* iteration {iteration}, threshold = {threshold}")  # Thông báo tiến trình
+            result, new_threshold = self.ida_star_recursive(self.initial, [], 0, threshold, explored_states)
             if result:
                 return result, explored_states
             if new_threshold == float('inf'):
                 return None, explored_states
             threshold = new_threshold
 
-    def ida_star_recursive(self, state, path, g, threshold, visited, explored_states):
+    def ida_star_recursive(self, state, path, g, threshold, explored_states):
         f = g + self.heuristic(state)
         explored_states.append(state)
 
@@ -298,17 +311,13 @@ class EightPuzzle:
         if state == self.goal:
             return path + [state], threshold
 
-        visited.add(state)
         min_threshold = float('inf')
-
         for neighbor in self.get_neighbors(state):
-            if neighbor not in visited:
-                result, new_threshold = self.ida_star_recursive(neighbor, path + [state], g + 1, threshold, visited, explored_states)
-                if result:
-                    return result, threshold
-                min_threshold = min(min_threshold, new_threshold)
+            result, new_threshold = self.ida_star_recursive(neighbor, path + [state], g + 1, threshold, explored_states)
+            if result:
+                return result, threshold
+            min_threshold = min(min_threshold, new_threshold)
 
-        visited.remove(state)
         return None, min_threshold
 
     def simple_hill_climbing(self):
@@ -1594,11 +1603,11 @@ def plot_performance(performance_history):
             marker_color="lightblue",
             text=[f"{val:.0f}" for val in avg_states_explored],
             textposition="auto",
-            textfont=dict(size=14),
+            textfont=dict(size=14, family="Arial", weight="bold"),  # In đậm
         ),
         row=1, col=1
     )
-    fig.update_yaxes(title_text="States Explored", row=1, col=1)
+    fig.update_yaxes(title_text="States Explored", row=1, col=1, tickfont=dict(weight="bold"))  # In đậm trục y
 
     fig.add_trace(
         go.Bar(
@@ -1608,16 +1617,18 @@ def plot_performance(performance_history):
             marker_color="lightcoral",
             text=[f"{val:.2f}" for val in avg_runtimes],
             textposition="auto",
-            textfont=dict(size=14),
+            textfont=dict(size=14, family="Arial", weight="bold"),  # In đậm
         ),
         row=2, col=1
     )
-    fig.update_yaxes(title_text="Time (ms)", row=2, col=1)
+    fig.update_yaxes(title_text="Time (ms)", row=2, col=1, tickfont=dict(weight="bold"))  # In đậm trục y
 
+    fig.update_xaxes(tickfont=dict(weight="bold"))  # In đậm tên thuật toán
     fig.update_layout(
         height=800,
         width=1000,
         title_text="Performance Comparison",
+        title_font=dict(size=16, weight="bold"),  # In đậm tiêu đề
         showlegend=False,
         bargap=0.2,
     )
