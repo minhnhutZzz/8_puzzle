@@ -18,7 +18,7 @@ Các thành phần chính của bài toán tìm kiếm và giải pháp
 + Giải pháp
   Dãy các trạng thái từ trạng thái ban đầu đến trạng thái mục tiêu, được tạo ra bởi các thuật toán tìm kiếm không có thông tin BFS, DFS, UCS, và IDS.
 Hình ảnh gif từng thuật toán cùng biểu đồ so sánh hiệu suất
-![nhom1](r"asset\gif\nhom1.gif")
+![Nhóm 1](asset/gif/nhom1.gif)
 
 Nhận xét
 + BFS (Breadth-First Search): Hiệu quả trong việc tìm đường đi ngắn nhất nhờ khám phá theo mức độ (level-order). Tuy nhiên, BFS có thể tiêu tốn nhiều bộ nhớ, đặc biệt khi không gian trạng thái lớn, do phải lưu trữ tất cả các trạng thái ở mỗi mức.
