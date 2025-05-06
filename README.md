@@ -6,17 +6,18 @@ Mục tiêu cốt lõi của dự án là xây dựng một chương trình toà
 ## 2.1 Nhóm thuật toán tìm kiếm không có thông tin (Uninformed Search Algorithms)
 Các thành phần chính của bài toán tìm kiếm và giải pháp
 + Trạng thái ban đầu
-  Một lưới 3x3 với 8 số từ 1 đến 8 và một ô trống (0), đại diện cho trạng thái khởi đầu của bài toán.
+- Một lưới 3x3 với 8 số từ 1 đến 8 và một ô trống (0), đại diện cho trạng thái khởi đầu của bài toán.
 + Trạng thái mục tiêu
-  Lưới 3x3 với thứ tự số từ 1 đến 8 và ô trống ở vị trí cuối cùng ([[1 2 3], [4 5 6], [7 8 0]]).
+- Lưới 3x3 với thứ tự số từ 1 đến 8 và ô trống ở vị trí cuối cùng ([[1 2 3], [4 5 6], [7 8 0]]).
 + Không gian trạng thái
-  Tập hợp tất cả các cấu hình có thể của lưới 3x3 hay các cách sắp xếp cụ thể vị trí các ô.
+- Tập hợp tất cả các cấu hình có thể của lưới 3x3 hay các cách sắp xếp cụ thể vị trí các ô.
 + Hành động
-  Di chuyển ô trống lên, xuống, trái, hoặc phải để hoán đổi với ô số liền kề.
+- Di chuyển ô trống lên, xuống, trái, hoặc phải để hoán đổi với ô số liền kề.
 + Chi phí
-  Mỗi bước di chuyển có chi phí bằng 1, vì bài toán ưu tiên tìm đường đi ngắn nhất.
+- Mỗi bước di chuyển có chi phí bằng 1, vì bài toán ưu tiên tìm đường đi ngắn nhất.
 + Giải pháp
   Dãy các trạng thái từ trạng thái ban đầu đến trạng thái mục tiêu, được tạo ra bởi các thuật toán tìm kiếm không có thông tin BFS, DFS, UCS, và IDS.
+  
 Hình ảnh gif từng thuật toán cùng biểu đồ so sánh hiệu suất
 ![Nhóm 1](asset/gif/nhom1.gif)
 
