@@ -60,3 +60,36 @@ Kết luận
 + IDA* nổi bật về tốc độ và tiết kiệm bộ nhớ, nhưng số trạng thái khám phá cao hơn dự kiến cho thấy cần cải thiện heuristic (ví dụ: kết hợp Manhattan Distance với Linear Conflict) để giảm số lần lặp.
 + GBFS phù hợp khi ưu tiên tốc độ, nhưng không đảm bảo đường đi tối ưu, trong khi A* là lựa chọn tốt nhất nếu cần đảm bảo tính tối ưu và sẵn sàng đánh đổi về tài nguyên.
 
+## 2.3 Nhóm thuật toán tìm kiếm cục bộ (Local Optimization Algorithms)
+Các thành phần chính của bài toán tìm kiếm và giải pháp
++ Trạng thái ban đầu
+  - Một lưới 3x3 với 8 số từ 1 đến 8 và một ô trống (0), đại diện cho trạng thái khởi đầu của bài toán ([[1, 3, 6], [4, 2, 0], [7, 5, 8]]).
++ Trạng thái mục tiêu
+  - Lưới 3x3 với thứ tự số từ 1 đến 8 và ô trống ở vị trí cuối cùng ([[1 2 3], [4 5 6], [7 8 0]]).
++ Không gian trạng thái
+  - Tập hợp tất cả các cấu hình có thể của lưới 3x3 hay các cách sắp xếp cụ thể vị trí các ô.
++ Hành động
+  - Di chuyển ô trống lên, xuống, trái, hoặc phải để hoán đổi với ô số liền kề.
++ Chi phí
+  - Mỗi bước di chuyển có chi phí bằng 1, vì bài toán ưu tiên tìm đường đi ngắn nhất.
++ Giải pháp
+  - Dãy các trạng thái từ trạng thái ban đầu đến trạng thái mục tiêu, được tạo ra bởi các thuật toán tìm kiếm cục bộ Simple Hill Climbing (SHC), Steepest Ascent Hill Climbing (SAHC), Random Hill Climbing (RHC), Simulated Annealing (SA), Beam Search (BS), và Genetic Algorithm (GA).
+
+Hình ảnh gif từng thuật toán cùng biểu đồ so sánh hiệu suất
+
+![Nhóm 3](asset/gif/nhom3.gif)
+
+Nhận xét
++ Simple Hill Climbing (SHC): Nhanh nhất trong nhóm nhờ chọn trạng thái lân cận đầu tiên tốt hơn và dừng sớm khi mắc kẹt ở cực trị cục bộ. SHC có thời gian chạy thấp nhất nhưng chỉ khám phá rất ít trạng thái, dễ bỏ sót giải pháp tối ưu do không có cơ chế thoát cực trị cục bộ.
++ Steepest Ascent Hill Climbing (SAHC): Chậm hơn SHC vì phải duyệt hết tất cả lân cận để chọn trạng thái tốt nhất mỗi bước, dẫn đến khám phá nhiều trạng thái hơn SHC. Trong biểu đồ, SAHC có thời gian chạy cao hơn SHC và RHC, nhưng vẫn nhanh hơn các thuật toán khác trong nhóm, phù hợp với lý thuyết.
++ Random Hill Climbing (RHC): Thời gian chạy trung bình trong nhóm Hill Climbing, vì chỉ chọn ngẫu nhiên một trạng thái lân cận tốt hơn thay vì duyệt hết như SAHC. RHC khám phá số trạng thái trung bình, nhiều hơn SHC nhưng ít hơn SAHC, phản ánh đúng đặc điểm lý thuyết.
++ Simulated Annealing (SA): Chậm hơn nhóm Hill Climbing nhưng nhanh hơn GA, nhờ cơ chế làm nguội nhiệt độ và khả năng chấp nhận trạng thái tệ hơn với xác suất giảm dần. Với trạng thái này, SA khám phá nhiều trạng thái hơn HC và BS, nhưng ít hơn GA, phù hợp lý thuyết do lặp lâu để thoát cực trị cục bộ.
++ Beam Search (BS): Thời gian chạy trung bình, nhanh hơn SA và GA nhờ giới hạn số trạng thái mỗi bước (beam_width=5). BS khám phá ít trạng thái hơn SA và GA, nhưng nhiều hơn HC, phản ánh đúng đặc điểm lý thuyết về cân bằng giữa thời gian và không gian.
++ Genetic Algorithm (GA): Chậm nhất và khám phá nhiều trạng thái nhất, do lặp qua nhiều thế hệ, với quần thể lớn. Điều này giúp GA có khả năng tìm giải pháp tối ưu hơn HC, nhưng tốn tài nguyên, đúng với lý thuyết.
+
+Kết luận
++ GA hiệu quả trong việc khám phá không gian trạng thái rộng, nhưng tốn nhiều thời gian và bộ nhớ, phù hợp khi cần tìm giải pháp tối ưu mà các thuật toán khác không đạt được.
++ SA là lựa chọn cân bằng, với khả năng thoát cực trị cục bộ, phù hợp cho bài toán 8-Puzzle khi cần hiệu suất tốt hơn HC.
++ BS nhanh hơn SA và GA, nhưng có thể bỏ sót giải pháp nếu beam_width quá nhỏ.
++ Nhóm HC (SHC, SAHC, RHC) nhanh và tiết kiệm tài nguyên, nhưng dễ mắc kẹt ở cực trị cục bộ, trong đó SHC nhanh nhất nhưng kém hiệu quả nhất về khả năng tìm giải pháp tối ưu.
+
