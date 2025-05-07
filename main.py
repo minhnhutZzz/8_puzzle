@@ -110,7 +110,7 @@ class EightPuzzle:
         explored_states = []
         best_fitness = float('-inf')
         no_improvement_count = 0
-        max_no_improvement = 50
+        max_no_improvement = 100
 
         for generation in range(max_generations):
             population = sorted(population, key=self.fitness, reverse=True)
@@ -416,10 +416,10 @@ class EightPuzzle:
         best_state = current
         best_heuristic = current_heuristic
 
-        temperature = 100.0
-        cooling_rate = 0.995
+        temperature = 1000.0  # Tăng nhiệt độ ban đầu
+        cooling_rate = 0.99  # Giảm tốc độ làm nguội
         no_improvement_count = 0
-        max_no_improvement = 1000
+        max_no_improvement = 2000  # Tăng giới hạn không cải thiện
 
         while temperature > 0.01 and no_improvement_count < max_no_improvement:
             explored_states.add(current)
@@ -459,7 +459,7 @@ class EightPuzzle:
             return self.reconstruct_path(best_state), list(explored_states)
         return None, list(explored_states)
 
-    def beam_search(self, beam_width=3):
+    def beam_search(self, beam_width=5):  # Tăng beam_width
         initial_state = self.initial
         if initial_state == self.goal:
             return [initial_state], []
