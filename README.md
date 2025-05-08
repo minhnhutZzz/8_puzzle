@@ -161,4 +161,27 @@ Kết luận:
 + Backtracking Search nhanh nhất, nhưng tốn nhiều không gian trạng thái, phù hợp khi cần giải nhanh và không gian tìm kiếm không quá lớn.
 + Forward Checking Search hiệu quả về không gian, nhưng thời gian chạy cao do chi phí tính toán lớn. Cần tối ưu chi phí mỗi bước để cạnh tranh hơn, nhưng vẫn là lựa chọn tốt khi ưu tiên giảm không gian tìm kiếm.
 
+## 2.6 Nhóm thuật toán học tăng cường (Reinforcement Learning)
+Các thành phần chính của bài toán tìm kiếm và giải pháp
++ Trạng thái ban đầu
+  - Một lưới 3x3 với 8 số từ 1 đến 8 và một ô trống (0), đại diện cho trạng thái khởi đầu của bài toán (ví dụ: [[4, 1, 3], [7, 2, 6], [0, 5, 8]]).
++ Trạng thái mục tiêu
+  - Lưới 3x3 với thứ tự số từ 1 đến 8 và ô trống ở vị trí cuối cùng ([[1 2 3], [4 5 6], [7 8 0]]).
++ Không gian trạng thái
+  - Tập hợp tất cả các cấu hình có thể của lưới 3x3, được tạo ra bằng cách hoán đổi ô trống với các ô liền kề hợp lệ. Thuật toán Q-Learning học chính sách tối ưu thông qua việc khám phá không gian trạng thái này.
++ Hành động
+  - Di chuyển ô trống lên, xuống, trái, hoặc phải để hoán đổi với ô số liền kề. Có 4 hành động tương ứng: 0 (trái), 1 (phải), 2 (xuống), 3 (lên).
++ Chi phí
+  - Mỗi bước di chuyển có chi phí là 1, vì bài toán tập trung tìm đường đi ngắn nhất từ trạng thái ban đầu đến trạng thái mục tiêu.
++ Giải pháp
+  - Một dãy các trạng thái từ trạng thái ban đầu đến trạng thái mục tiêu, được tạo ra bởi thuật toán Q-Learning. Thuật toán học chính sách tối ưu bằng cách cập nhật bảng Q (Q-table) dựa trên phần thưởng, sau đó trích xuất đường đi từ bảng Q đã học.
 
+Hình ảnh gif từng thuật toán cùng biểu đồ so sánh hiệu suất
+
+![Nhóm 6](asset/gif/nhom6.gif)
+
+Nhận xét
++ Q-Learning: Thuật toán sử dụng chiến lược Epsilon-Greedy để cân bằng giữa khám phá và khai thác, cập nhật bảng Q dựa trên phần thưởng. Số trạng thái khám phá cao do Q-Learning cần thăm nhiều trạng thái trong quá trình học để xây dựng chính sách tối ưu. Thời gian chạy tương đối cao vì số lượng trạng thái lớn và chi phí tính toán mỗi bước bao gồm cập nhật Q-value, tính phần thưởng, và kiểm tra trạng thái lân cận. Tuy nhiên, Q-Learning đảm bảo hội tụ về chính sách tối ưu nếu có đủ thời gian học, phù hợp khi cần học chính sách dài hạn trong môi trường không xác định.
+
+Kết luận:
++ Q-Learning là lựa chọn phù hợp trong nhóm học tăng cường cho bài toán 8-Puzzle khi cần học chính sách tối ưu mà không yêu cầu mô hình môi trường. Tuy nhiên, số trạng thái khám phá lớn và thời gian chạy cao, cho thấy nó kém hiệu quả hơn so với các thuật toán tìm kiếm khác về mặt không gian và thời gian.
