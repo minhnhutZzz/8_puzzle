@@ -96,7 +96,9 @@ Kết luận
 ## 2.4 Nhóm thuật toán tìm kiếm trong môi trường phức tạp (Search in complex environments)
 Các thành phần chính của bài toán tìm kiếm và giải pháp
 + Trạng thái ban đầu
-  - Một lưới 3x3 với 8 số từ 1 đến 8 và một ô trống (0), đại diện cho trạng thái khởi đầu của bài toán ([[1, 2, 3], [4, 5, 6], [7, 0, 8]]).
+  - Đối với AND-OR Search: Một lưới 3x3 cụ thể với 8 số từ 1 đến 8 và một ô trống (0), đại diện cho trạng thái khởi đầu (ví dụ: [[1, 2, 3], [4, 5, 6], [7, 0, 8]]).
+  - Đối với Belief State Search: Một tập belief states bao gồm trạng thái ban đầu và 2 trạng thái lân cận được tạo ra bằng cách hoán đổi ô trống với các ô liền kề hợp lệ, mô phỏng môi trường mù hoàn toàn.
+  - Đối với Partial Observable Search (POS): Một tập belief states bao gồm các trạng thái có số 1 ở vị trí (0,0) (do quan sát một phần), được tạo từ trạng thái ban đầu và các trạng thái lân cận hợp lệ.
 + Trạng thái mục tiêu
   - Lưới 3x3 với thứ tự số từ 1 đến 8 và ô trống ở vị trí cuối cùng ([[1 2 3], [4 5 6], [7 8 0]]).
 + Không gian trạng thái
@@ -118,7 +120,7 @@ Hình ảnh gif từng thuật toán cùng biểu đồ so sánh hiệu suất
 Nhận xét
 + AND-OR Search hoạt động trong môi trường không xác định. Thuật toán không thu hẹp nhánh AND, dẫn đến không gian trạng thái lớn nhất. Tuy nhiên, thời gian chạy thấp do chi phí xử lý mỗi trạng thái thấp: không gọi hàm heuristic để thu hẹp, chỉ thực hiện các thao tác đơn giản như kiểm tra mục tiêu và hoán đổi ô trống.
 + Belief State Search hoạt động trong môi trường mù hoàn toàn, tạo trạng thái không xác định với xác suất. Thuật toán thu hẹp belief state (giữ 3 trạng thái tốt nhất theo heuristic), làm giảm không gian trạng thái so với AND-OR Search. Tuy nhiên, việc gọi hàm heuristic nhiều lần để thu hẹp belief state làm tăng chi phí xử lý mỗi trạng thái, dẫn đến thời gian chạy cao hơn.
-+ POS hoạt động trong môi trường quan sát một phần (vị trí số 1 ở (0,0)), tạo trạng thái không xác định với xác suất, và thu hẹp belief state (giữ 3 trạng thái tốt nhất). Quan sát giúp loại bỏ sớm các trạng thái không phù hợp, làm không gian trạng thái nhỏ nhất. Thời gian chạy trung bình do chi phí xử lý mỗi trạng thái cao: gọi hàm heuristic để thu hẹp belief state và kiểm tra quan sát (self.get_observation). Số bước trung bình, phản ánh khả năng tập trung vào mục tiêu nhờ quan sát.
++ POS hoạt động trong môi trường quan sát một phần (vị trí số 1 ở (0,0)), tạo trạng thái không xác định với xác suất, và thu hẹp belief state (giữ 3 trạng thái tốt nhất). Quan sát giúp loại bỏ sớm các trạng thái không phù hợp, làm không gian trạng thái nhỏ nhất. Thời gian chạy trung bình do chi phí xử lý mỗi trạng thái cao: gọi hàm heuristic để thu hẹp belief state và kiểm tra quan sát. Số bước trung bình, phản ánh khả năng tập trung vào mục tiêu nhờ quan sát.
 
 Kết luận
 + POS là lựa chọn tốt nhất trong nhóm khi cần cân bằng giữa thời gian chạy và không gian trạng thái, nhờ quan sát giúp loại bỏ trạng thái không phù hợp và thu hẹp belief state hiệu quả.
