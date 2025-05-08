@@ -486,32 +486,49 @@ class EightPuzzle:
 
         return None, list(path.keys())
 
-    def and_or_search(self):
-        from collections import deque
-
-        # Khởi tạo hàng đợi với trạng thái ban đầu và đường đi tương ứng
-        queue = deque([(self.initial, [])])
+    def and_or_search(self, max_steps=1000):
+        queue = deque([(self.initial, [], {self.initial}, None)])  # (state, path, and_group, action)
         visited = set()
         explored_states = []
+        num_steps = 0
 
-        while queue:
-            state, path = queue.popleft()
+        while queue and num_steps < max_steps:
+            state, path, and_group, action = queue.popleft()
             explored_states.append(state)
+            num_steps += 1
 
-            # Kiểm tra xem trạng thái hiện tại có phải là mục tiêu không
-            if state == self.goal:
-                return path + [state], explored_states
+            # Kiểm tra nhánh AND: Tất cả trạng thái trong and_group phải là mục tiêu
+            if all(s == self.goal for s in and_group):
+                state_path = [p for p, a in path] + [state]
+                return state_path, explored_states
 
-            # Nếu trạng thái chưa được thăm
-            if state not in visited:
-                visited.add(state)
+            state_tuple = frozenset(and_group)
+            if state_tuple in visited:
+                continue
+            visited.add(state_tuple)
 
-                # Lấy tất cả các trạng thái lân cận (các nhánh OR)
-                neighbors = self.get_neighbors(state)
-                # Thêm tất cả các trạng thái lân cận vào hàng đợi (AND: cần khám phá tất cả)
-                for neighbor in neighbors:
-                    if neighbor not in visited:
-                        queue.append((neighbor, path + [state]))
+            # Nhánh OR: Lựa chọn giữa các hành động (lên, xuống, trái, phải)
+            neighbors = self.get_neighbors(state)
+            for action_idx, neighbor in enumerate(neighbors):
+                # Nhánh AND: Tạo tất cả trạng thái có thể xảy ra sau hành động
+                and_states = {neighbor}  # Trạng thái bình thường
+
+                # Tạo trạng thái không xác định với xác suất 50%
+                if random.random() < 0.7:  # Xác suất 50%
+                    i, j = self.find_blank(neighbor)
+                    directions = [(0, -1), (0, 1), (1, 0), (-1, 0)]
+                    valid_directions = [(di, dj) for di, dj in directions if 0 <= i + di < 3 and 0 <= j + dj < 3]
+                    for di, dj in valid_directions:
+                        ni, nj = i + di, j + dj
+                        state_list = list(map(list, neighbor))
+                        state_list[i][j], state_list[ni][nj] = state_list[ni][nj], state_list[i][j]
+                        uncertain_state = tuple(map(tuple, state_list))
+                        and_states.add(uncertain_state)
+
+                # Thêm nhánh AND vào hàng đợi (không thu hẹp and_states)
+                if and_states:
+                    action_name = ["up", "down", "right", "left"][action_idx]
+                    queue.append((neighbor, path + [(state, action_name)], and_states, action_name))
 
         return None, explored_states
 
@@ -550,92 +567,79 @@ class EightPuzzle:
         num_explored_states = 0
         belief_states_path = [list(initial_belief)]
         total_steps = 0
-        best_heuristic = float('inf')
-        no_improvement_steps = 0
 
-        # Initialize explored states
+        # Khởi tạo explored states
         for state in initial_belief:
             explored.add(state)
             num_explored_states += 1
-            h = self.heuristic(state)
-            if h < best_heuristic:
-                best_heuristic = h
 
-        belief_queue = []
-        representative_state = min(initial_belief, key=self.heuristic)
-        heapq.heappush(belief_queue, (self.heuristic(representative_state), initial_belief, []))
+        belief_queue = deque([(initial_belief, [])])
         visited = set()
 
         while belief_queue and num_explored_states < max_steps:
-            _, belief_state, path = heapq.heappop(belief_queue)
+            belief_state, path = belief_queue.popleft()
             belief_state_tuple = frozenset(belief_state)
 
-            for state in belief_state:
-                if state == self.goal:
-                    for initial_state in initial_belief:
-                        self.initial = initial_state
-                        solution, _ = self.bfs()
-                        if solution:
-                            total_steps += len(solution) - 1
-                        else:
-                            return None, explored, 0
-                    belief_states_path.append([self.goal] * len(initial_belief))
-                    return belief_states_path, explored, total_steps
+            # Kiểm tra mục tiêu: Tất cả trạng thái trong belief state phải là goal
+            if all(state == self.goal for state in belief_state):
+                total_steps = 0
+                for initial_state in initial_belief:
+                    self.initial = initial_state
+                    solution, _ = self.bfs()
+                    if solution:
+                        total_steps += len(solution) - 1
+                    else:
+                        return None, explored, 0
+                belief_states_path.append([self.goal] * len(initial_belief))
+                return belief_states_path, explored, total_steps
 
             if belief_state_tuple in visited:
                 continue
             visited.add(belief_state_tuple)
 
-            action_scores = []
+            # Duyệt qua các hành động (lên, xuống, trái, phải)
             for action in range(4):
                 new_belief = set()
-                min_heuristic = float('inf')
-                count = 0
                 for state in belief_state:
                     neighbors = self.get_neighbors(state)
                     if action < len(neighbors):
-                        next_states = self.optimized_bfs_for_belief(state, max_depth=1)
-                        new_belief.update(next_states)
-                        for next_state in next_states:
-                            h = self.heuristic(next_state)
-                            min_heuristic = min(min_heuristic, h)
-                            count += 1
+                        # Thêm trạng thái xác định
+                        next_state = neighbors[action]
+                        new_belief.add(next_state)
+
+                        # Tạo trạng thái không xác định (chỉ với xác suất 10%)
+                        if random.random() < 0.1:
+                            i, j = None, None
+                            for r in range(3):
+                                for c in range(3):
+                                    if next_state[r][c] == 0:
+                                        i, j = r, c
+                                        break
+
+                            directions = [(0, -1), (0, 1), (1, 0), (-1, 0)]  # Lên, xuống, phải, trái
+                            valid_directions = [(di, dj) for di, dj in directions if
+                                                0 <= i + di < 3 and 0 <= j + dj < 3]
+                            if valid_directions:
+                                di, dj = random.choice(valid_directions)
+                                ni, nj = i + di, j + dj
+                                state_list = [list(row) for row in next_state]
+                                state_list[i][j], state_list[ni][nj] = state_list[ni][nj], state_list[i][j]
+                                uncertain_state = tuple(tuple(row) for row in state_list)
+                                new_belief.add(uncertain_state)
+                    else:
+                        # Nếu hành động không hợp lệ, giữ nguyên trạng thái
+                        new_belief.add(state)
+
+                # Thu hẹp belief state: Chỉ giữ 3 trạng thái gần mục tiêu nhất
                 if new_belief:
-                    score = min_heuristic + len(new_belief) * 0.1
-                    action_scores.append((action, score, new_belief))
+                    new_belief = set(sorted(new_belief, key=self.heuristic)[:3])  # Giữ 3 trạng thái tốt nhất
 
-            if not action_scores:
-                continue
-
-            action_scores.sort(key=lambda x: x[1])
-
-            if random.random() < 0.1:
-                action, _, new_belief = random.choice(action_scores)
-            else:
-                action, _, new_belief = action_scores[0]
-
-            if len(new_belief) > 10:
-                new_belief = set(sorted(new_belief, key=self.heuristic)[:10])
-
-            if new_belief:
-                representative_state = min(new_belief, key=self.heuristic)
-                new_heuristic = self.heuristic(representative_state)
-                if new_heuristic < best_heuristic:
-                    best_heuristic = new_heuristic
-                    no_improvement_steps = 0
-                else:
-                    no_improvement_steps += 1
-
-                if no_improvement_steps > 500 or len(new_belief) > 50:
-                    return None, explored, 0
-
-                for state in new_belief:
-                    if state not in explored:
-                        explored.add(state)
-                        num_explored_states += 1
-                new_path = path + [representative_state]
-                heapq.heappush(belief_queue, (new_heuristic, new_belief, new_path))
-                belief_states_path.append(list(new_belief))
+                    for state in new_belief:
+                        if state not in explored:
+                            explored.add(state)
+                            num_explored_states += 1
+                    belief_queue.append((new_belief, path + [min(belief_state, key=self.heuristic)]))
+                    belief_states_path.append(list(new_belief))
 
         return None, explored, 0
 
@@ -669,11 +673,11 @@ class EightPuzzle:
                     return (i, j)
         return None
 
-    def find_states_with_one_at_00(self, start_state, max_states=6):
+    def find_states_with_one_at_00(self, start_state, max_states=3):  # Giảm từ 6 xuống 3
         """
         Tìm các trạng thái có số 1 ở vị trí (0,0) bằng BFS.
         start_state: Trạng thái ban đầu.
-        max_states: Số trạng thái tối đa cần tìm.
+        max_states: Số trạng thái tối đa cần tìm là 3.
         Trả về: Danh sách các trạng thái (dạng tuple) có số 1 ở (0,0).
         """
         queue = deque([(start_state, [])])
@@ -710,12 +714,12 @@ class EightPuzzle:
         Partial Observable Search: Tìm kiếm trên không gian belief states với số 1 ở (0,0).
         Trả về: (belief_states_path, explored_states, total_steps) hoặc (None, explored_states, 0).
         """
-        # Khởi tạo initial_belief với 6 trạng thái có số 1 ở (0,0)
-        initial_belief = self.find_states_with_one_at_00(self.initial, max_states=6)
-        queue = deque([(set(initial_belief), [], 0)])
+        # Khởi tạo initial_belief với 3 trạng thái có số 1 ở (0,0)
+        initial_belief = self.find_states_with_one_at_00(self.initial, max_states=3)
+        queue = deque([(set(initial_belief), [], 0)])  # (belief_state, path, steps)
         visited = set()
         explored_states = []
-        belief_states_path = [list(initial_belief)[:6]]
+        belief_states_path = [list(initial_belief)]
         max_steps = 1000
 
         while queue and len(queue) < max_steps:
@@ -723,47 +727,49 @@ class EightPuzzle:
             belief_state_tuple = frozenset(belief_state)
             explored_states.extend(belief_state)
 
-            # Kiểm tra điều kiện mục tiêu: Chỉ cần một trạng thái là goal
-            for state in belief_state:
-                if state == self.goal:
-                    # Tính tổng số bước bằng BFS từ initial_belief đến goal
-                    total_steps = 0
-                    for initial_state in initial_belief:
-                        self.initial = initial_state
-                        solution, _ = self.bfs()
-                        if solution:
-                            total_steps += len(solution) - 1
-                        else:
-                            return None, explored_states, 0
-                    belief_states_path.append([self.goal] * 6)  # Hiển thị goal state cho tất cả Belief States
-                    return belief_states_path, explored_states, total_steps
+            # Kiểm tra điều kiện mục tiêu: Tất cả trạng thái trong belief state phải là goal
+            if all(state == self.goal for state in belief_state):
+                total_steps = steps  # Số bước là số hành động (steps)
+                belief_states_path.append([self.goal] * 3)  # Chỉ 3 trạng thái
+                return belief_states_path, explored_states, total_steps
 
             if belief_state_tuple in visited:
                 continue
             visited.add(belief_state_tuple)
 
-            actions = set()
-            for state in belief_state:
-                neighbors = self.get_neighbors(state)
-                for action in range(len(neighbors)):
-                    actions.add(action)
-
-            for action in actions:
+            # Duyệt qua các hành động (lên, xuống, trái, phải)
+            for action in range(4):
                 new_belief = set()
                 for state in belief_state:
                     neighbors = self.get_neighbors(state)
                     if action < len(neighbors):
-                        next_states = self.bfs_for_belief(state, max_depth=1)
-                        new_belief.update(next_states)
+                        # Thêm trạng thái xác định
+                        next_state = neighbors[action]
+                        # Chỉ giữ trạng thái có số 1 ở (0,0)
+                        if self.get_observation(next_state) == (0, 0):
+                            new_belief.add(next_state)
 
-                # Lọc new_belief để chỉ giữ trạng thái có số 1 ở (0,0)
-                new_belief = set(state for state in new_belief if self.get_observation(state) == (0, 0))
+                        # Tạo trạng thái không xác định (chỉ với xác suất 10%)
+                        if random.random() < 0.1:  # Giảm từ 50% xuống 10%
+                            i, j = self.find_blank(next_state)
+                            directions = [(0, -1), (0, 1), (1, 0), (-1, 0)]
+                            valid_directions = [(di, dj) for di, dj in directions if
+                                                0 <= i + di < 3 and 0 <= j + dj < 3]
+                            if valid_directions:
+                                di, dj = random.choice(valid_directions)
+                                ni, nj = i + di, j + dj
+                                state_list = [list(row) for row in next_state]
+                                state_list[i][j], state_list[ni][nj] = state_list[ni][nj], state_list[i][j]
+                                uncertain_state = tuple(tuple(row) for row in state_list)
+                                # Chỉ giữ trạng thái không xác định có số 1 ở (0,0)
+                                if self.get_observation(uncertain_state) == (0, 0):
+                                    new_belief.add(uncertain_state)
 
-                if new_belief and len(new_belief) <= 20:  # Giới hạn kích thước new_belief
-                    representative_state = min(belief_state, key=self.heuristic)
-                    new_path = path + [representative_state]
-                    queue.append((new_belief, new_path, steps + 1))
-                    belief_states_path.append(list(new_belief)[:6])  # Lưu belief state mới
+                # Thu hẹp belief state: Giữ tối đa 3 trạng thái tốt nhất theo heuristic
+                if new_belief:
+                    new_belief = set(sorted(new_belief, key=self.heuristic)[:3])  # Giảm từ 5 xuống 3
+                    queue.append((new_belief, path + [min(belief_state, key=self.heuristic)], steps + 1))
+                    belief_states_path.append(list(new_belief))
 
         return None, explored_states, 0
 
@@ -2037,9 +2043,10 @@ def main_game(initial_state, goal_state):
                             initial_state_tuple = tuple(tuple(row) for row in initial_state)
                             initial_belief = {initial_state_tuple}
                             neighbors = puzzle.get_neighbors(initial_state_tuple)
-                            for neighbor in neighbors[:5]:
+                            # lấy 2 lân cận
+                            for neighbor in neighbors[:2]:
                                 initial_belief.add(neighbor)
-                            while len(initial_belief) < 6:
+                            while len(initial_belief) < 3:
                                 random_state = puzzle.generate_random_state()
                                 if random_state not in initial_belief:
                                     initial_belief.add(random_state)
@@ -2121,7 +2128,7 @@ def main_game(initial_state, goal_state):
                         elif label == "POS":
                             print("Calling belief_state_interface for POS")
                             initial_state_tuple = tuple(tuple(row) for row in initial_state)
-                            initial_belief = puzzle.find_states_with_one_at_00(initial_state_tuple, max_states=6)
+                            initial_belief = puzzle.find_states_with_one_at_00(initial_state_tuple, max_states=3)
                             result = belief_state_interface(initial_belief, goal_state, "POS", performance_history)
                             print(f"Returned from belief_state_interface: {result}")
                             if result == "BACK":
@@ -2413,7 +2420,7 @@ def belief_state_interface(initial_belief, goal_state, algorithm_type, performan
         # Cập nhật giải pháp cho tất cả Belief States đồng thời
         if running_solution:
             current_time = pygame.time.get_ticks()
-            if current_time - last_update_time >= 500:  # Cập nhật mỗi 500ms
+            if current_time - last_update_time >= 50:  # delay
                 all_finished = True
                 for idx in range(num_matrices):
                     if solutions[idx] and solution_indices[idx] < len(solutions[idx]):
