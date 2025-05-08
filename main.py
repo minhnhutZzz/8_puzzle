@@ -16,6 +16,7 @@ class EightPuzzle:
         self.initial = tuple(map(tuple, initial))
         self.goal = tuple(map(tuple, goal))
         self.rows, self.cols = 3, 3
+        self.intermediate_states = []
 
     # tìm vị trí ô trống
     def find_blank(self, state):
@@ -821,58 +822,121 @@ class EightPuzzle:
 
     def backtracking_search(self, depth_limit=9):
         """
-        Backtracking Search cho CSP: Gán giá trị cho các ô từ ma trận rỗng.
-        depth_limit: Số ô tối đa được gán (9 cho ma trận 3x3).
-        Trả về: (path, explored_states) hoặc (None, explored_states).
+        Backtracking Search for CSP: Assign values to cells from an empty matrix.
+        Each step assigns a value to a variable (cell) and checks constraints.
+        Backtracks if no valid assignment is possible.
+
+        Args:
+            depth_limit (int): Maximum number of cells to assign (9 for 3x3 matrix).
+
+        Returns:
+            tuple: (path, explored_states) if solution found, (None, explored_states) otherwise.
+            - path: List of states from empty to goal.
+            - explored_states: List of explored states during search.
         """
-        visited = set()  # Lưu các trạng thái đã thăm
-        explored_states = []  # Lưu các trạng thái đã khám phá
-        path = []  # Lưu đường đi từ rỗng đến mục tiêu
+        visited = set()  # Store visited states to avoid cycles
+        explored_states = []  # Store all explored states
+        path = []  # Store the path from empty to goal
+
+        def is_valid_assignment(state, pos, value):
+            i, j = pos
+            # Ràng buộc: Ô (0,0) phải là 1
+            if i == 0 and j == 0 and value != 1:
+                return False
+
+            # Ràng buộc: Mỗi số chỉ xuất hiện một lần
+            for r in range(3):
+                for c in range(3):
+                    if (r, c) != pos and state[r][c] == value:
+                        return False
+
+            # Chỉ kiểm tra các ô liền kề
+            # Ràng buộc theo hàng: ô(i,j+1) = ô(i,j) + 1 (trừ ô trống)
+            if j > 0 and state[i][j - 1] is not None and value != 0 and state[i][j - 1] != value - 1:
+                return False
+            if j < 2 and state[i][j + 1] is not None and value != 0 and state[i][j + 1] != value + 1:
+                return False
+
+            # Ràng buộc theo cột: ô(i+1,j) = ô(i,j) + 3 (trừ ô trống)
+            if i > 0 and state[i - 1][j] is not None and value != 0 and state[i - 1][j] != value - 3:
+                return False
+            if i < 2 and state[i + 1][j] is not None and value != 0 and state[i + 1][j] != value + 3:
+                return False
+
+            return True
+
+        def is_solvable(state):
+            """
+            Check if the matrix is solvable (even number of inversions).
+
+            Args:
+                state: Current matrix (may contain None).
+
+            Returns:
+                bool: True if solvable, False otherwise.
+            """
+            flat = [state[i][j] for i in range(3) for j in range(3) if state[i][j] is not None and state[i][j] != 0]
+            inversions = 0
+            for i in range(len(flat)):
+                for j in range(i + 1, len(flat)):
+                    if flat[i] > flat[j]:
+                        inversions += 1
+            return inversions % 2 == 0
 
         def backtrack(state, assigned, pos_index):
             """
-            Hàm đệ quy để thực hiện backtracking.
-            state: Ma trận hiện tại (có thể chứa None).
-            assigned: Tập các giá trị đã gán.
-            pos_index: Chỉ số ô đang gán (0-8).
+            Recursive function for backtracking.
+
+            Args:
+                state: Current matrix (may contain None).
+                assigned: Set of assigned values.
+                pos_index: Index of the current cell being assigned (0-8).
+
+            Returns:
+                list: Path to solution if found, None otherwise.
             """
-            # Kiểm tra trạng thái mục tiêu
-            if pos_index == 9:  # Đã gán hết 9 ô
+            # Base case: All cells assigned
+            if pos_index == 9:
                 state_tuple = tuple(tuple(row) for row in state)
-                if state_tuple == self.goal and self.is_solvable(state):
+                if state_tuple == self.goal and is_solvable(state):
                     path.append(state_tuple)
                     return path
                 return None
 
-            # Lấy vị trí ô tiếp theo
+            # Get the next cell position
             i, j = divmod(pos_index, 3)
             if i >= 3 or j >= 3:
                 return None
 
-            # Tạo bản sao trạng thái
+            # Create a state tuple for checking visited states
             state_tuple = tuple(tuple(row if row is not None else (None, None, None)) for row in state)
             if state_tuple in visited:
                 return None
             visited.add(state_tuple)
             explored_states.append(state_tuple)
 
-            # Thử gán các giá trị còn lại
+            # Try assigning each possible value
             for value in range(9):
-                if value not in assigned:
-                    if self.is_valid_assignment(state, (i, j), value):
-                        # Gán giá trị
-                        new_state = [row[:] for row in state]
-                        new_state[i][j] = value
-                        new_assigned = assigned | {value}
-                        path.append(state_tuple)  # Thêm trạng thái trước khi gán
-                        result = backtrack(new_state, new_assigned, pos_index + 1)
-                        if result is not None:
-                            return result
-                        path.pop()  # Quay lui: xóa trạng thái nếu không thành công
+                if value not in assigned and is_valid_assignment(state, (i, j), value):
+                    # Assign the value
+                    new_state = [row[:] for row in state]
+                    new_state[i][j] = value
+                    new_assigned = assigned | {value}
+
+                    # Add current state to path before recursion
+                    path.append(state_tuple)
+
+                    # Recurse to the next cell
+                    result = backtrack(new_state, new_assigned, pos_index + 1)
+                    if result is not None:
+                        return result
+
+                    # Backtrack: Remove the state from path
+                    path.pop()
 
             return None
 
-        # Khởi tạo ma trận rỗng
+        # Initialize empty matrix and start backtracking
         empty_state = [[None for _ in range(3)] for _ in range(3)]
         result = backtrack(empty_state, set(), 0)
         return result, explored_states
@@ -902,37 +966,35 @@ class EightPuzzle:
             return domain
 
         def forward_check(state, pos, value, domains, assigned):
-            """
-            Thực hiện Forward Checking: Cập nhật tập giá trị của các ô chưa gán.
-            state: Ma trận hiện tại.
-            pos: Vị trí ô vừa gán (i,j).
-            value: Giá trị vừa gán.
-            domains: Từ điển chứa tập giá trị hợp lệ cho các ô.
-            assigned: Tập các vị trí và giá trị đã gán.
-            Trả về: True nếu tất cả ô chưa gán còn giá trị hợp lệ, False nếu không.
-            """
+            i, j = pos
             new_domains = {k: v[:] for k, v in domains.items()}
             used_values = set(state[r][c] for r in range(3) for c in range(3) if state[r][c] is not None)
-            related_positions = [(r, c) for r in range(3) for c in range(3) if
-                                 (r, c) not in assigned and (r == pos[0] or c == pos[1])]
+
+            # Chỉ kiểm tra các ô liền kề
+            related_positions = []
+            if j > 0: related_positions.append((i, j - 1))
+            if j < 2: related_positions.append((i, j + 1))
+            if i > 0: related_positions.append((i - 1, j))
+            if i < 2: related_positions.append((i + 1, j))
+
             for other_pos in related_positions:
-                if other_pos != pos:
-                    i, j = other_pos
+                if other_pos not in assigned:
+                    r, c = other_pos
                     new_domain = [val for val in new_domains[other_pos] if val not in used_values]
-                    if pos == (0, 0) and value == 1:
+                    if (i, j) == (0, 0) and value == 1:
                         if other_pos == (0, 1):
                             new_domain = [2]
                         elif other_pos == (1, 0):
                             new_domain = [4]
-                    elif value != 0:  # Chỉ áp dụng ràng buộc hàng/cột nếu value không phải ô trống
-                        if j > 0 and state[i][j - 1] is not None and state[i][j - 1] != 0:
-                            new_domain = [val for val in new_domain if val == 0 or state[i][j - 1] == val - 1]
-                        if j < 2 and state[i][j + 1] is not None and state[i][j + 1] != 0:
-                            new_domain = [val for val in new_domain if val == 0 or state[i][j + 1] == val + 1]
-                        if i > 0 and state[i - 1][j] is not None and state[i - 1][j] != 0:
-                            new_domain = [val for val in new_domain if val == 0 or state[i - 1][j] == val - 3]
-                        if i < 2 and state[i + 1][j] is not None and state[i][j + 1] != 0:
-                            new_domain = [val for val in new_domain if val == 0 or state[i][j + 1] == val + 3]
+                    elif value != 0:
+                        if c > 0 and state[r][c - 1] is not None and state[r][c - 1] != 0:
+                            new_domain = [val for val in new_domain if val == 0 or state[r][c - 1] == val - 1]
+                        if c < 2 and state[r][c + 1] is not None and state[r][c + 1] != 0:
+                            new_domain = [val for val in new_domain if val == 0 or state[r][c + 1] == val + 1]
+                        if r > 0 and state[r - 1][c] is not None and state[r - 1][c] != 0:
+                            new_domain = [val for val in new_domain if val == 0 or state[r - 1][c] == val - 3]
+                        if r < 2 and state[r + 1][c] is not None and state[r + 1][c] != 0:
+                            new_domain = [val for val in new_domain if val == 0 or state[r + 1][c] == val + 3]
                     new_domains[other_pos] = new_domain
                     if not new_domain:
                         return False, domains
@@ -940,28 +1002,24 @@ class EightPuzzle:
 
         def select_mrv_variable(positions, domains, state):
             """
-            Chọn ô có ít giá trị hợp lệ nhất (MRV), ưu tiên ô có nhiều ràng buộc trực tiếp.
+            Chọn ô có ít giá trị hợp lệ nhất (MRV), đúng lý thuyết.
             positions: Danh sách các ô chưa gán.
             domains: Từ điển chứa tập giá trị hợp lệ.
             state: Ma trận hiện tại.
             Trả về: Vị trí ô được chọn.
             """
-            max_constraints = -1
+            min_domain_size = float('inf')
             selected_pos = None
             for pos in positions:
-                i, j = pos
-                constraints = sum(1 for r, c in [(i, j - 1), (i, j + 1), (i - 1, j), (i + 1, j)] if
-                                  0 <= r < 3 and 0 <= c < 3 and state[r][c] is not None)
                 domain_size = len(domains[pos])
-                if constraints > max_constraints or (constraints == max_constraints and domain_size < (
-                len(domains[selected_pos]) if selected_pos else float('inf'))):
-                    max_constraints = constraints
+                if domain_size < min_domain_size:
+                    min_domain_size = domain_size
                     selected_pos = pos
             return selected_pos
 
         def select_lcv_value(pos, domain, state, domains, assigned):
             """
-            Chọn giá trị ít ràng buộc nhất (LCV), ưu tiên giá trị trong goal_state.
+            Chọn giá trị ít ràng buộc nhất (LCV), đúng lý thuyết.
             pos: Vị trí ô đang gán.
             domain: Tập giá trị hợp lệ của ô.
             state: Ma trận hiện tại.
@@ -975,8 +1033,6 @@ class EightPuzzle:
                 temp_state[pos[0]][pos[1]] = value
                 _, new_domains = forward_check(temp_state, pos, value, domains, assigned)
                 eliminated = sum(len(domains[p]) - len(new_domains[p]) for p in new_domains if p != pos)
-                if value == self.goal[pos[0]][pos[1]]:  # Ưu tiên giá trị trong goal_state
-                    eliminated -= 10
                 value_scores.append((eliminated, value))
             value_scores.sort()
             return [value for _, value in value_scores]
@@ -1065,23 +1121,9 @@ class EightPuzzle:
         return result, explored_states
 
     def min_conflicts_search(self, max_iterations=1000, max_no_improvement=20, timeout=2.0):
-        """
-        Optimized Min-Conflicts Search for CSP starting from an empty state.
-
-        Args:
-            max_iterations (int): Maximum number of iterations.
-            max_no_improvement (int): Maximum iterations without improvement before restart.
-            timeout (float): Maximum running time in seconds.
-
-        Returns:
-            tuple: (path, num_explored_states) if solution found,
-                   (None, num_explored_states) otherwise.
-        """
 
         def count_conflicts(state):
-            """
-            Count conflicts with optimized weights and Manhattan heuristic.
-            """
+
             conflicts = 0
             manhattan_distance = 0
             value_counts = defaultdict(int)
@@ -1177,7 +1219,7 @@ class EightPuzzle:
         best_conflicts = float('inf')
         best_state = current_state
         no_improvement_count = 0
-        temperature = 5.0  # Reduced initial temperature
+        temperature = 2.0  # Reduced initial temperature
 
         # Initialize (0,0) with 1 to satisfy constraint
         current_state[0][0] = 1
@@ -1739,6 +1781,8 @@ def main_game(initial_state, goal_state):
     error_timer = 0
     selected_button = None
     display_state = initial_state  # Trạng thái hiển thị trước khi chạy thuật toán
+    needs_redraw = True  # Cờ để kiểm soát khi nào cần vẽ lại giao diện
+    last_redraw_time = 0  # Thời điểm vẽ lại cuối cùng
 
     def draw_grid(state, offset_x, offset_y, tile_size):
         for i in range(3):
@@ -1782,88 +1826,87 @@ def main_game(initial_state, goal_state):
                     file.write(f"    Steps: {run['steps']}\n")
                     file.write(f"    States Explored: {run['states_explored']}\n")
                     file.write(f"    Runtime: {run['runtime']:.2f} ms\n")
-                    file.write(f"    Path: {'Found' if run['path'] else 'Not Found'}\n")
-                    if run['path']:
-                        file.write("    Path Details:\n")
-                        for j, state in enumerate(run['path'][:5]):  # Giới hạn 5 trạng thái đầu để tóm tắt
-                            file.write(f"      State {j + 1}: {state}\n")
-                        if len(run['path']) > 5:
-                            file.write(f"      ... (Total {len(run['path'])} states)\n")
+                    file.write(f"    Path Length: {len(run['path']) if run['path'] else 0}\n")  # Chỉ lưu độ dài đường đi
                 file.write("\n")
             file.write("================================\n")
 
     running = True
     clock = pygame.time.Clock()
     while running:
-        screen.blit(background, (0, 0))
+        # Chỉ vẽ giao diện khi cần thiết
+        if needs_redraw or (solution and solution_index < len(solution)):
+            screen.blit(background, (0, 0))
 
-        render_text_with_border(screen, "8-Puzzle Solver", title_font, (255, 0, 0), (0, 0, 0), (WIDTH // 2, 50))
+            render_text_with_border(screen, "8-Puzzle Solver", title_font, (255, 0, 0), (0, 0, 0), (WIDTH // 2, 50))
 
-        render_text_with_border(screen, "Initial State", label_font, (0, 255, 0), (0, 0, 0),
-                                (initial_grid_x + (small_tile_size * 3) // 2, initial_grid_y - 20))
-        draw_grid(initial_state, initial_grid_x, initial_grid_y, small_tile_size)
+            render_text_with_border(screen, "Initial State", label_font, (0, 255, 0), (0, 0, 0),
+                                    (initial_grid_x + (small_tile_size * 3) // 2, initial_grid_y - 20))
+            draw_grid(initial_state, initial_grid_x, initial_grid_y, small_tile_size)
 
-        render_text_with_border(screen, "Goal State", label_font, (0, 255, 0), (0, 0, 0),
-                                (goal_grid_x + (small_tile_size * 3) // 2, goal_grid_y - 20))
-        draw_grid(goal_state, goal_grid_x, goal_grid_y, small_tile_size)
+            render_text_with_border(screen, "Goal State", label_font, (0, 255, 0), (0, 0, 0),
+                                    (goal_grid_x + (small_tile_size * 3) // 2, goal_grid_y - 20))
+            draw_grid(goal_state, goal_grid_x, goal_grid_y, small_tile_size)
 
-        # Hiển thị trạng thái thuật toán
-        if solution:
-            if solution_index < len(solution):
-                draw_grid(solution[solution_index], algo_grid_x, algo_grid_y, algo_tile_size)
-                solution_index += 1
-                pygame.time.delay(500)
+            # Hiển thị trạng thái thuật toán
+            if solution:
+                if solution_index < len(solution):
+                    draw_grid(solution[solution_index], algo_grid_x, algo_grid_y, algo_tile_size)
+                    solution_index += 1
+                    pygame.time.wait(500)  # Dùng wait thay vì delay để không làm chậm vòng lặp chính
+                else:
+                    draw_grid(solution[-1], algo_grid_x, algo_grid_y, algo_tile_size)
             else:
-                draw_grid(solution[-1], algo_grid_x, algo_grid_y, algo_tile_size)
-        else:
-            draw_grid(display_state, algo_grid_x, algo_grid_y, algo_tile_size)
+                draw_grid(display_state, algo_grid_x, algo_grid_y, algo_tile_size)
 
-        render_text_with_border(screen, f"Running Time: {elapsed_time:.2f} ms", info_font, (0, 128, 0), (0, 0, 0),
-                                (algo_grid_x + 225, algo_grid_y + 500))
-        render_text_with_border(screen, f"Steps: {steps}", info_font, (0, 128, 0), (0, 0, 0),
-                                (algo_grid_x + 225, algo_grid_y + 550))
+            render_text_with_border(screen, f"Running Time: {elapsed_time:.2f} ms", info_font, (0, 128, 0), (0, 0, 0),
+                                    (algo_grid_x + 225, algo_grid_y + 500))
+            render_text_with_border(screen, f"Steps: {steps}", info_font, (0, 128, 0), (0, 0, 0),
+                                    (algo_grid_x + 225, algo_grid_y + 550))
 
-        if error_message and pygame.time.get_ticks() - error_timer < 1000:
-            render_text_with_border(screen, "No Solution Found!", info_font, (255, 0, 0), (0, 0, 0),
-                                    (algo_grid_x + 225, algo_grid_y + 575))
-        else:
-            error_message = None
+            if error_message and pygame.time.get_ticks() - error_timer < 1000:
+                render_text_with_border(screen, "No Solution Found!", info_font, (255, 0, 0), (0, 0, 0),
+                                        (algo_grid_x + 225, algo_grid_y + 575))
+            else:
+                error_message = None
 
-        for label, rect in buttons:
+            for label, rect in buttons:
+                corner_radius = 10
+                button_color = (255, 255, 0) if selected_button == label else (26, 125, 255)
+                pygame.draw.rect(screen, button_color, rect, border_radius=corner_radius)
+                pygame.draw.rect(screen, (41, 128, 185), rect, 2, border_radius=corner_radius)
+                render_text_with_border(screen, label, button_font, (255, 255, 255), (0, 0, 0),
+                                        (rect.centerx, rect.centery))
+
             corner_radius = 10
-            button_color = (255, 255, 0) if selected_button == label else (26, 125, 255)
-            pygame.draw.rect(screen, button_color, rect, border_radius=corner_radius)
-            pygame.draw.rect(screen, (41, 128, 185), rect, 2, border_radius=corner_radius)
-            render_text_with_border(screen, label, button_font, (255, 255, 255), (0, 0, 0),
-                                    (rect.centerx, rect.centery))
+            # Vẽ nút Info
+            info_button_color = (255, 255, 0) if selected_button == "INFO" else (26, 125, 255)
+            pygame.draw.rect(screen, info_button_color, info_button_rect, border_radius=corner_radius)
+            pygame.draw.rect(screen, (41, 128, 185), info_button_rect, 2, border_radius=corner_radius)
+            render_text_with_border(screen, "INFO", button_font, (255, 255, 255), (0, 0, 0),
+                                    (info_button_rect.centerx, info_button_rect.centery))
 
-        corner_radius = 10
-        # Vẽ nút Info
-        info_button_color = (255, 255, 0) if selected_button == "INFO" else (26, 125, 255)
-        pygame.draw.rect(screen, info_button_color, info_button_rect, border_radius=corner_radius)
-        pygame.draw.rect(screen, (41, 128, 185), info_button_rect, 2, border_radius=corner_radius)
-        render_text_with_border(screen, "INFO", button_font, (255, 255, 255), (0, 0, 0),
-                                (info_button_rect.centerx, info_button_rect.centery))
+            view_button_color = (255, 255, 0) if selected_button == "VIEW" else (26, 125, 255)
+            pygame.draw.rect(screen, view_button_color, view_button_rect, border_radius=corner_radius)
+            pygame.draw.rect(screen, (41, 128, 185), view_button_rect, 2, border_radius=corner_radius)
+            render_text_with_border(screen, "VIEW", button_font, (255, 255, 255), (0, 0, 0),
+                                    (view_button_rect.centerx, view_button_rect.centery))
 
-        view_button_color = (255, 255, 0) if selected_button == "VIEW" else (26, 125, 255)
-        pygame.draw.rect(screen, view_button_color, view_button_rect, border_radius=corner_radius)
-        pygame.draw.rect(screen, (41, 128, 185), view_button_rect, 2, border_radius=corner_radius)
-        render_text_with_border(screen, "VIEW", button_font, (255, 255, 255), (0, 0, 0),
-                                (view_button_rect.centerx, view_button_rect.centery))
+            reset_button_color = (255, 255, 0) if selected_button == "RESET" else (26, 125, 255)
+            pygame.draw.rect(screen, reset_button_color, reset_button_rect, border_radius=corner_radius)
+            pygame.draw.rect(screen, (41, 128, 185), reset_button_rect, 2, border_radius=corner_radius)
+            render_text_with_border(screen, "RESET", button_font, (255, 255, 255), (0, 0, 0),
+                                    (reset_button_rect.centerx, reset_button_rect.centery))
 
-        reset_button_color = (255, 255, 0) if selected_button == "RESET" else (26, 125, 255)
-        pygame.draw.rect(screen, reset_button_color, reset_button_rect, border_radius=corner_radius)
-        pygame.draw.rect(screen, (41, 128, 185), reset_button_rect, 2, border_radius=corner_radius)
-        render_text_with_border(screen, "RESET", button_font, (255, 255, 255), (0, 0, 0),
-                                (reset_button_rect.centerx, reset_button_rect.centery))
+            back_button_color = (255, 255, 0) if selected_button == "BACK" else (26, 125, 255)
+            pygame.draw.rect(screen, back_button_color, back_button_rect, border_radius=corner_radius)
+            pygame.draw.rect(screen, (41, 128, 185), back_button_rect, 2, border_radius=corner_radius)
+            render_text_with_border(screen, "BACK", button_font, (255, 255, 255), (0, 0, 0),
+                                    (back_button_rect.centerx, back_button_rect.centery))
 
-        back_button_color = (255, 255, 0) if selected_button == "BACK" else (26, 125, 255)
-        pygame.draw.rect(screen, back_button_color, back_button_rect, border_radius=corner_radius)
-        pygame.draw.rect(screen, (41, 128, 185), back_button_rect, 2, border_radius=corner_radius)
-        render_text_with_border(screen, "BACK", button_font, (255, 255, 255), (0, 0, 0),
-                                (back_button_rect.centerx, back_button_rect.centery))
+            pygame.display.flip()
+            needs_redraw = False  # Đặt lại cờ sau khi vẽ
+            last_redraw_time = pygame.time.get_ticks()
 
-        pygame.display.flip()
         clock.tick(60)
 
         for event in pygame.event.get():
@@ -1875,8 +1918,6 @@ def main_game(initial_state, goal_state):
                 mouse_pos = event.pos
                 if info_button_rect.collidepoint(mouse_pos):
                     selected_button = "INFO"
-                    pygame.display.flip()
-                    pygame.time.delay(200)
                     display_algorithm_info(performance_history)  # Ghi thông tin vào file txt
                     import platform
                     import os
@@ -1890,13 +1931,13 @@ def main_game(initial_state, goal_state):
                             os.system(f"xdg-open {file_path}")
                     except Exception as e:
                         print(f"Error opening file: {e}")
+                    needs_redraw = True
                     continue
 
                 if view_button_rect.collidepoint(mouse_pos):
                     selected_button = "VIEW"
-                    pygame.display.flip()
-                    pygame.time.delay(200)
                     plot_performance(performance_history)
+                    needs_redraw = True
                     continue
 
                 if reset_button_rect.collidepoint(mouse_pos):
@@ -1907,14 +1948,11 @@ def main_game(initial_state, goal_state):
                     steps = 0
                     error_message = None
                     display_state = initial_state
-                    pygame.display.flip()
-                    pygame.time.delay(200)
+                    needs_redraw = True
                     continue
 
                 if back_button_rect.collidepoint(mouse_pos):
                     selected_button = "BACK"
-                    pygame.display.flip()
-                    pygame.time.delay(200)
                     pygame.quit()
                     return "BACK"
 
@@ -1926,16 +1964,15 @@ def main_game(initial_state, goal_state):
                         elapsed_time = 0
                         steps = 0
                         error_message = None
-                        start_time = timeit.default_timer()
 
                         # Set display_state based on algorithm
                         if label in ["MinConf", "Backtrack", "Forward"]:
                             display_state = [[None, None, None], [None, None, None], [None, None, None]]
-                            draw_grid(display_state, algo_grid_x, algo_grid_y, algo_tile_size)
-                            pygame.display.flip()
-                            pygame.time.delay(200)
                         else:
                             display_state = initial_state
+
+                        # Đo thời gian chạy thuật toán mà không vẽ giao diện
+                        start_time = timeit.default_timer()
 
                         if label == "MinConf":
                             puzzle = EightPuzzle([[None, None, None], [None, None, None], [None, None, None]],
@@ -1950,7 +1987,7 @@ def main_game(initial_state, goal_state):
                                 "runtime": elapsed_time,
                                 "steps": steps,
                                 "states_explored": num_explored_states,
-                                "path": solution if solution else []
+                                "path": []  # Không lưu toàn bộ solution, chỉ lưu độ dài
                             })
                         elif label == "QLearn":
                             puzzle = EightPuzzle(initial_state, goal_state)
@@ -1964,7 +2001,7 @@ def main_game(initial_state, goal_state):
                                 "runtime": elapsed_time,
                                 "steps": steps,
                                 "states_explored": states_explored if states_explored is not None else 0,
-                                "path": solution if solution else []
+                                "path": []
                             })
                         elif label == "Backtrack":
                             puzzle = EightPuzzle([[None, None, None], [None, None, None], [None, None, None]],
@@ -1979,7 +2016,7 @@ def main_game(initial_state, goal_state):
                                 "runtime": elapsed_time,
                                 "steps": steps,
                                 "states_explored": explored_states if explored_states is not None else 0,
-                                "path": solution if solution else []
+                                "path": []
                             })
                         elif label == "Forward":
                             puzzle = EightPuzzle([[None, None, None], [None, None, None], [None, None, None]],
@@ -1994,7 +2031,7 @@ def main_game(initial_state, goal_state):
                                 "runtime": elapsed_time,
                                 "steps": steps,
                                 "states_explored": explored_states if explored_states is not None else 0,
-                                "path": solution if solution else []
+                                "path": []
                             })
                         elif label in ["BFS", "DFS", "UCS", "IDS", "Greedy", "A*", "IDA*", "SHC", "SAHC", "RHC",
                                        "SAS", "Beam", "Genetic", "AND-OR"]:
@@ -2036,7 +2073,7 @@ def main_game(initial_state, goal_state):
                                 "runtime": elapsed_time,
                                 "steps": steps,
                                 "states_explored": explored_states if explored_states is not None else 0,
-                                "path": solution if solution else []
+                                "path": []
                             })
                         elif label == "Belief":
                             print("Calling belief_state_interface for Belief")
@@ -2203,6 +2240,8 @@ def main_game(initial_state, goal_state):
                                                         (back_button_rect.centerx, back_button_rect.centery))
                                 pygame.display.flip()
                                 continue
+
+                        needs_redraw = True  # Yêu cầu vẽ lại giao diện sau khi thuật toán chạy xong
 
     pygame.quit()
     return None
