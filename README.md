@@ -93,3 +93,38 @@ Kết luận
 + BS nhanh hơn SA và GA, nhưng có thể bỏ sót giải pháp nếu beam_width quá nhỏ.
 + Nhóm HC (SHC, SAHC, RHC) nhanh và tiết kiệm tài nguyên, nhưng dễ mắc kẹt ở cực trị cục bộ, trong đó SHC nhanh nhất nhưng kém hiệu quả nhất về khả năng tìm giải pháp tối ưu.
 
+## 2.4 Nhóm thuật toán tìm kiếm trong môi trường phức tạp (Search in complex environments)
+Các thành phần chính của bài toán tìm kiếm và giải pháp
++ Trạng thái ban đầu
+  - Một lưới 3x3 với 8 số từ 1 đến 8 và một ô trống (0), đại diện cho trạng thái khởi đầu của bài toán ([[1, 2, 3], [4, 5, 6], [7, 0, 8]]).
++ Trạng thái mục tiêu
+  - Lưới 3x3 với thứ tự số từ 1 đến 8 và ô trống ở vị trí cuối cùng ([[1 2 3], [4 5 6], [7 8 0]]).
++ Không gian trạng thái
+  - Tập hợp tất cả các cấu hình có thể của lưới 3x3, bao gồm các trạng thái xác định và không xác định (do hoán đổi ô trống với các ô liền kề hợp lệ).
++ Hành động
+  - Di chuyển ô trống lên, xuống, trái, hoặc phải để hoán đổi với ô số liền kề. Các thuật toán trong nhóm này còn mô phỏng không xác định bằng cách hoán đổi ô trống với các ô liền kề hợp lệ.
++ Chi phí
+  - Mỗi bước di chuyển có chi phí bằng 1, vì bài toán ưu tiên tìm đường đi ngắn nhất.
++ Giải pháp
+  - Dãy các trạng thái từ trạng thái ban đầu đến trạng thái mục tiêu, được tạo ra bởi các thuật toán AND-OR Search, Belief State Search, và Partial Observable Search (POS). Các thuật toán này duy trì tập belief states (tập hợp trạng thái có thể) và tìm kiếm đường dẫn để tất cả trạng thái trong belief state đạt mục tiêu.
+
+Hình ảnh gif từng thuật toán cùng biểu đồ so sánh hiệu suất
+
+![Nhóm 4_1](asset/gif/nhom4_1.gif)
+![Nhóm 4_2](asset/gif/nhom4_2.gif)
+![Nhóm 4_3](asset/gif/nhom4_3.gif)
+![Nhóm 4_4](asset/gif/nhom4_4.gif)
+
+Nhận xét
++ AND-OR Search hoạt động trong môi trường không xác định. Thuật toán không thu hẹp nhánh AND, dẫn đến không gian trạng thái lớn nhất. Tuy nhiên, thời gian chạy thấp do chi phí xử lý mỗi trạng thái thấp: không gọi hàm heuristic để thu hẹp, chỉ thực hiện các thao tác đơn giản như kiểm tra mục tiêu và hoán đổi ô trống.
++ Belief State Search hoạt động trong môi trường mù hoàn toàn, tạo trạng thái không xác định với xác suất. Thuật toán thu hẹp belief state (giữ 3 trạng thái tốt nhất theo heuristic), làm giảm không gian trạng thái so với AND-OR Search. Tuy nhiên, việc gọi hàm heuristic nhiều lần để thu hẹp belief state làm tăng chi phí xử lý mỗi trạng thái, dẫn đến thời gian chạy cao hơn.
++ POS hoạt động trong môi trường quan sát một phần (vị trí số 1 ở (0,0)), tạo trạng thái không xác định với xác suất, và thu hẹp belief state (giữ 3 trạng thái tốt nhất). Quan sát giúp loại bỏ sớm các trạng thái không phù hợp, làm không gian trạng thái nhỏ nhất. Thời gian chạy trung bình do chi phí xử lý mỗi trạng thái cao: gọi hàm heuristic để thu hẹp belief state và kiểm tra quan sát (self.get_observation). Số bước trung bình, phản ánh khả năng tập trung vào mục tiêu nhờ quan sát.
+
+Kết luận
++ POS là lựa chọn tốt nhất trong nhóm khi cần cân bằng giữa thời gian chạy và không gian trạng thái, nhờ quan sát giúp loại bỏ trạng thái không phù hợp và thu hẹp belief state hiệu quả.
++ Belief State Search phù hợp khi không có thông tin quan sát, nhưng chậm hơn do chi phí xử lý cao và không gian trạng thái lớn hơn POS.
++ AND-OR Search nhanh nhất nhưng tốn nhiều không gian trạng thái nhất, phù hợp khi trạng thái ban đầu gần mục tiêu, nhưng có thể không hiệu quả trong các trường hợp phức tạp do không thu hẹp nhánh AND.
+  
+
+
+
