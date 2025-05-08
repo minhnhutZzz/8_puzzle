@@ -125,6 +125,38 @@ Kết luận
 + Belief State Search phù hợp khi không có thông tin quan sát, nhưng chậm hơn do chi phí xử lý cao và không gian trạng thái lớn hơn POS.
 + AND-OR Search nhanh nhất nhưng tốn nhiều không gian trạng thái nhất, phù hợp khi trạng thái ban đầu gần mục tiêu, nhưng có thể không hiệu quả trong các trường hợp phức tạp do không thu hẹp nhánh AND.
   
+## 2.5 Nhóm thuật toán tìm kiếm thỏa ràng buộc (Constraint Satisfaction Problem)
+Các thành phần chính của bài toán tìm kiếm và giải pháp
++ Trạng thái ban đầu
+  - Một lưới 3x3 rỗng, nơi tất cả các ô ban đầu là None ([[None, None, None], [None, None, None], [None, None, None]]). Mục tiêu là gán các giá trị từ 0 đến 8 vào lưới sao cho thỏa mãn các ràng buộc.
++ Trạng thái mục tiêu
+  - Lưới 3x3 với thứ tự số từ 1 đến 8 và ô trống ở vị trí cuối cùng ([[1 2 3], [4 5 6], [7 8 0]]).
++ Không gian trạng thái
+  - Tập hợp tất cả các cấu hình có thể của lưới 3x3 khi gán giá trị từ 0 đến 8, với các ràng buộc:
+    * Ô (0,0) phải là 1.
+    * Mỗi số từ 0 đến 8 chỉ xuất hiện một lần.
+    * Ràng buộc hàng: Ô (i,j+1) = ô(i,j) + 1 (trừ ô trống).
+    * Ràng buộc cột: Ô (i+1,j) = ô(i,j) + 3 (trừ ô trống).
+    * Trạng thái phải có thể giải được (số nghịch đảo chẵn).
++ Hành động
+  - Gán giá trị từ 0 đến 8 vào các ô chưa gán, đảm bảo thỏa mãn các ràng buộc. Các thuật toán trong nhóm này sử dụng các chiến lược như Backtracking, Forward Checking, và Min-Conflicts để tìm giải pháp.
++ Chi phí
+  - Mỗi bước gán giá trị có chi phí bằng 1. Bài toán ưu tiên tìm trạng thái thỏa mãn tất cả ràng buộc với số bước tối thiểu.
++ Giải pháp
+  - Dãy các trạng thái từ trạng thái rỗng đến trạng thái mục tiêu, được tạo ra bởi các thuật toán Backtracking Search, Forward Checking Search, và Min-Conflicts Search. Các thuật toán này đảm bảo trạng thái cuối cùng thỏa mãn tất cả ràng buộc và khớp với mục tiêu.
 
+Hình ảnh gif từng thuật toán cùng biểu đồ so sánh hiệu suất
+
+![Nhóm 5](asset/gif/nhom5.gif)
+
+Nhận xét
++ Backtracking Search: Thuật toán duyệt không gian tìm kiếm theo chiều sâu, kiểm tra ràng buộc và quay lui khi cần. Do không có cơ chế tối ưu hóa như MRV hay LCV, số trạng thái khám phá cao, nhưng chi phí mỗi bước thấp, dẫn đến thời gian chạy nhanh nhất trong nhóm. Phù hợp khi trạng thái ban đầu đơn giản, nhưng không hiệu quả với bài toán phức tạp do không gian tìm kiếm lớn.
++ Forward Checking Search: Thuật toán sử dụng Forward Checking để thu hẹp domain sau mỗi lần gán, cùng với MRV (chọn ô có ít giá trị hợp lệ nhất) và LCV (chọn giá trị ít loại trừ nhất). Số trạng thái khám phá thấp hơn Backtracking nhờ cơ chế thu hẹp domain, nhưng thời gian chạy cao nhất do chi phí mỗi bước lớn. Phù hợp khi cần giảm không gian tìm kiếm, nhưng cần tối ưu chi phí tính toán.
++ Min-Conflicts Search: Thuật toán bắt đầu từ trạng thái rỗng, gán giá trị và điều chỉnh để giảm xung đột, sử dụng Simulated Annealing để tránh cực trị địa phương. Số trạng thái khám phá thấp nhất nhờ chiến lược sửa lỗi từng bước, nhưng chi phí mỗi bước cao do tính toán xung đột. Thời gian chạy nằm giữa Backtracking và Forward Checking, phản ánh sự cân bằng giữa không gian và chi phí xử lý. Phù hợp khi trạng thái ban đầu gần mục tiêu.
+
+Kết luận:
++ Min-Conflicts Search là lựa chọn tốt nhất trong nhóm về không gian trạng thái, với thời gian chạy hợp lý. Nó hiệu quả khi trạng thái ban đầu gần mục tiêu, nhờ khả năng sửa lỗi từng bước.
++ Backtracking Search nhanh nhất, nhưng tốn nhiều không gian trạng thái, phù hợp khi cần giải nhanh và không gian tìm kiếm không quá lớn.
++ Forward Checking Search hiệu quả về không gian, nhưng thời gian chạy cao do chi phí tính toán lớn. Cần tối ưu chi phí mỗi bước để cạnh tranh hơn, nhưng vẫn là lựa chọn tốt khi ưu tiên giảm không gian tìm kiếm.
 
 
