@@ -186,12 +186,12 @@ Nhận xét
 Kết luận:
 + Q-Learning là lựa chọn phù hợp trong nhóm học tăng cường cho bài toán 8-Puzzle khi cần học chính sách tối ưu mà không yêu cầu mô hình môi trường. Tuy nhiên, số trạng thái khám phá lớn và thời gian chạy cao, cho thấy nó kém hiệu quả hơn so với các thuật toán tìm kiếm khác về mặt không gian và thời gian.
 
-# Tác giả
+# 3. Tác giả
 Dự án được thực hiện bởi:
 
 ## Sinh Viên: Đào Minh Nhựt - 23110282
 
 Dự án này là đồ án cá nhân phục vụ việc học tập, đồng thời nhằm mục đích nghiên cứu và ứng dụng các thuật toán tìm kiếm AI vào bài toán 8-Puzzle, với trọng tâm là tối ưu hóa hiệu suất và trải nghiệm người dùng.
 
-# Tài liệu tham khảo
+# 4. Tài liệu tham khảo
 ....
