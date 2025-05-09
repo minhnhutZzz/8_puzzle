@@ -6,13 +6,13 @@ Mục tiêu cốt lõi của dự án là xây dựng một chương trình toà
 ## 2.1 Nhóm thuật toán tìm kiếm không có thông tin (Uninformed Search Algorithms)
 Các thành phần chính của bài toán tìm kiếm và giải pháp
 + Trạng thái ban đầu
-  - Một lưới 3x3 với 8 số từ 1 đến 8 và một ô trống (0), đại diện cho trạng thái khởi đầu của bài toán.
+  - Một lưới 3x3 với 8 số từ 1 đến 8 và một ô trống (0), đại diện cho trạng thái khởi đầu của bài toán ([[1 2 3], [0 5 6], [4 7 8]]).
 + Trạng thái mục tiêu
   - Lưới 3x3 với thứ tự số từ 1 đến 8 và ô trống ở vị trí cuối cùng ([[1 2 3], [4 5 6], [7 8 0]]).
 + Không gian trạng thái
   - Tập hợp tất cả các cấu hình có thể của lưới 3x3 hay các cách sắp xếp cụ thể vị trí các ô.
 + Hành động
-  - Di chuyển ô trống lên, xuống, trái, hoặc phải để hoán đổi với ô số liền kề.
+  - Di chuyển ô trống lên, xuống, trái, phải để hoán đổi với ô số liền kề.
 + Chi phí
   - Mỗi bước di chuyển có chi phí bằng 1, vì bài toán ưu tiên tìm đường đi ngắn nhất.
 + Giải pháp
@@ -23,8 +23,8 @@ Hình ảnh gif từng thuật toán cùng biểu đồ so sánh hiệu suất
 ![Nhóm 1](asset/gif/nhom1.gif)
 
 Nhận xét
-+ BFS (Breadth-First Search): Hiệu quả trong việc tìm đường đi ngắn nhất nhờ khám phá theo mức độ. Tuy nhiên, BFS có thể tiêu tốn nhiều bộ nhớ, đặc biệt khi không gian trạng thái lớn, do phải lưu trữ tất cả các trạng thái ở mỗi mức.
-+ DFS (Depth-First Search): Tiết kiệm bộ nhớ hơn BFS vì chỉ lưu trữ một đường đi tại một thời điểm. Tuy nhiên, DFS dễ bị đi sâu vào các nhánh không hứa hẹn, dẫn đến hiệu suất kém nếu trạng thái mục tiêu nằm ở độ sâu thấp.
++ BFS (Breadth-First Search): Thuật toán khám phá theo chiều rộng có thể tiêu tốn nhiều bộ nhớ, đặc biệt khi không gian trạng thái lớn, do phải lưu trữ tất cả các trạng thái ở mỗi mức.
++ DFS (Depth-First Search): Tiết kiệm bộ nhớ hơn BFS vì chỉ lưu trữ một đường đi tại một thời điểm. Tuy nhiên, DFS tìm kiếm theo chiều sâu nên dễ bị kẹt ở đó và không tìm ra giải pháp, dẫn đến hiệu suất kém nếu trạng thái mục tiêu nằm ở độ sâu thấp.
 + UCS (Uniform-Cost Search): Tương tự BFS, UCS đảm bảo tìm được đường đi tối ưu. Tuy nhiên, UCS linh hoạt hơn khi chi phí các bước có thể khác nhau, mặc dù điều này không ảnh hưởng nhiều trong bài toán 8-Puzzle với chi phí đồng nhất.
 + IDS (Iterative Deepening Search): Kết hợp ưu điểm của BFS và DFS, IDS khám phá theo từng mức độ nhưng không tiêu tốn bộ nhớ như BFS. IDS thường hiệu quả hơn trong các bài toán như 8-Puzzle, đặc biệt khi cần cân bằng giữa bộ nhớ và thời gian chạy.
   
@@ -41,7 +41,7 @@ Các thành phần chính của bài toán tìm kiếm và giải pháp
 + Không gian trạng thái
   - Tập hợp tất cả các cấu hình có thể của lưới 3x3 hay các cách sắp xếp cụ thể vị trí các ô.
 + Hành động
-  - Di chuyển ô trống lên, xuống, trái, hoặc phải để hoán đổi với ô số liền kề.
+  - Di chuyển ô trống lên, xuống, trái, phải để hoán đổi với ô số liền kề.
 + Chi phí
   - Mỗi bước di chuyển có chi phí bằng 1, vì bài toán ưu tiên tìm đường đi ngắn nhất.
 + Giải pháp
@@ -53,12 +53,12 @@ Hình ảnh gif từng thuật toán cùng biểu đồ so sánh hiệu suất
 
 Nhận xét
 + GBFS (Greedy Best-First Search): Nhanh và khám phá ít trạng thái nhờ chỉ tập trung vào giá trị heuristic, bỏ qua chi phí đã đi. GBFS tìm giải pháp nhanh chóng, nhưng có thể không đảm bảo đường đi ngắn nhất do dễ bị kẹt ở local optima nếu heuristic không đủ chính xác.
-+ A*: Đảm bảo tìm đường đi tối ưu nhờ sử dụng hàm đánh giá f(n) = g(n) + h(n), nhưng tiêu tốn nhiều bộ nhớ hơn GBFS và IDA* do duy trì hàng đợi ưu tiên lớn. Với trạng thái này, A* hoạt động ổn định, khám phá số trạng thái trung bình và tìm được đường đi tối ưu, nhưng thời gian chạy lâu hơn GBFS và IDA*.
-+ IDA (Iterative Deepening A Star)*: Kết hợp ưu điểm của A* và tìm kiếm theo độ sâu, IDA* tiết kiệm bộ nhớ và chạy rất nhanh nhờ không lưu trữ hàng đợi lớn. Tuy nhiên, IDA* khám phá nhiều trạng thái nhất do cơ chế lặp lại khiến nó phải quay lại các trạng thái đã khám phá ở các lần lặp trước, đặc biệt nếu heuristic không tối ưu.
++ A*: Đảm bảo tìm đường đi tối ưu nhờ sử dụng hàm đánh giá f(n) = g(n) + h(n), nhưng tiêu tốn nhiều bộ nhớ hơn GBFS và IDA* do duy trì hàng đợi ưu tiên lớn. Với trạng thái này, A* hoạt động ổn định, khám phá số trạng thái trung bình và tìm được đường đi tối ưu.
++ IDA* (Iterative Deepening A Star): Kết hợp ưu điểm của A* và tìm kiếm theo độ sâu, IDA* tiết kiệm bộ nhớ và chạy rất nhanh nhờ không lưu trữ hàng đợi lớn. Tuy nhiên, IDA* khám phá nhiều trạng thái nhất do cơ chế lặp lại khiến nó phải quay lại các trạng thái đã khám phá ở các lần lặp trước, đặc biệt nếu heuristic không tối ưu.
 
 Kết luận
 + IDA* nổi bật về tốc độ và tiết kiệm bộ nhớ, nhưng số trạng thái khám phá cao hơn dự kiến cho thấy cần cải thiện heuristic để giảm số lần lặp.
-+ GBFS phù hợp khi ưu tiên tốc độ, nhưng không đảm bảo đường đi tối ưu, trong khi A* là lựa chọn tốt nhất nếu cần đảm bảo tính tối ưu và sẵn sàng đánh đổi về tài nguyên.
++ GBFS phù hợp khi ưu tiên tốc độ, nhưng không đảm bảo đường đi tối ưu, trong khi A* là lựa chọn tốt nhất nếu cần đảm bảo tính tối ưu cho bài toán.
 
 ## 2.3 Nhóm thuật toán tìm kiếm cục bộ (Local Optimization Algorithms)
 Các thành phần chính của bài toán tìm kiếm và giải pháp
@@ -69,7 +69,7 @@ Các thành phần chính của bài toán tìm kiếm và giải pháp
 + Không gian trạng thái
   - Tập hợp tất cả các cấu hình có thể của lưới 3x3 hay các cách sắp xếp cụ thể vị trí các ô.
 + Hành động
-  - Di chuyển ô trống lên, xuống, trái, hoặc phải để hoán đổi với ô số liền kề.
+  - Di chuyển ô trống lên, xuống, trái, phải để hoán đổi với ô số liền kề.
 + Chi phí
   - Mỗi bước di chuyển có chi phí bằng 1, vì bài toán ưu tiên tìm đường đi ngắn nhất.
 + Giải pháp
@@ -81,9 +81,9 @@ Hình ảnh gif từng thuật toán cùng biểu đồ so sánh hiệu suất
 
 Nhận xét
 + Simple Hill Climbing (SHC): Nhanh nhất trong nhóm nhờ chọn trạng thái lân cận đầu tiên tốt hơn và dừng sớm khi mắc kẹt ở cực trị cục bộ. SHC có thời gian chạy thấp nhất nhưng chỉ khám phá rất ít trạng thái, dễ bỏ sót giải pháp tối ưu do không có cơ chế thoát cực trị cục bộ.
-+ Steepest Ascent Hill Climbing (SAHC): Chậm hơn SHC vì phải duyệt hết tất cả lân cận để chọn trạng thái tốt nhất mỗi bước, dẫn đến khám phá nhiều trạng thái hơn SHC. Trong biểu đồ, SAHC có thời gian chạy cao hơn SHC và RHC, nhưng vẫn nhanh hơn các thuật toán khác trong nhóm, phù hợp với lý thuyết.
-+ Random Hill Climbing (RHC): Thời gian chạy trung bình trong nhóm Hill Climbing, vì chỉ chọn ngẫu nhiên một trạng thái lân cận tốt hơn thay vì duyệt hết như SAHC. RHC khám phá số trạng thái trung bình, nhiều hơn SHC nhưng ít hơn SAHC, phản ánh đúng đặc điểm lý thuyết.
-+ Simulated Annealing (SA): Chậm hơn nhóm Hill Climbing nhưng nhanh hơn GA, nhờ cơ chế làm nguội nhiệt độ và khả năng chấp nhận trạng thái tệ hơn với xác suất giảm dần. Với trạng thái này, SA khám phá nhiều trạng thái hơn HC và BS, nhưng ít hơn GA, phù hợp lý thuyết do lặp lâu để thoát cực trị cục bộ.
++ Steepest Ascent Hill Climbing (SAHC): Chậm hơn SHC vì phải duyệt hết tất cả lân cận để chọn trạng thái tốt nhất mỗi bước, dẫn đến khám phá nhiều trạng thái hơn SHC.
++ Random Hill Climbing (RHC): Thời gian chạy trung bình trong nhóm Hill Climbing, vì chỉ chọn ngẫu nhiên một trạng thái lân cận tốt hơn thay vì duyệt hết như SAHC.
++ Simulated Annealing (SA): Thuật toán có cơ chế làm nguội nhiệt độ và khả năng chấp nhận trạng thái tệ hơn với xác suất giảm dần. Với trạng thái này, SA khám phá nhiều trang thái do lặp lâu để thoát cực trị cục bộ.
 + Beam Search (BS): Thời gian chạy trung bình, nhanh hơn SA và GA nhờ giới hạn số trạng thái mỗi bước (beam_width=5). BS khám phá ít trạng thái hơn SA và GA, nhưng nhiều hơn HC, phản ánh đúng đặc điểm lý thuyết về cân bằng giữa thời gian và không gian.
 + Genetic Algorithm (GA): Chậm nhất và khám phá nhiều trạng thái nhất, do lặp qua nhiều thế hệ, với quần thể lớn. Điều này giúp GA có khả năng tìm giải pháp tối ưu hơn HC, nhưng tốn tài nguyên, đúng với lý thuyết.
 
