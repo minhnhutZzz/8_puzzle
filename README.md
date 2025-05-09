@@ -97,18 +97,18 @@ Kết luận
 Các thành phần chính của bài toán tìm kiếm và giải pháp
 + Trạng thái ban đầu
   - Đối với AND-OR Search: Một lưới 3x3 cụ thể với 8 số từ 1 đến 8 và một ô trống (0), đại diện cho trạng thái khởi đầu (ví dụ: [[1, 2, 3], [4, 5, 6], [7, 0, 8]]).
-  - Đối với Belief State Search: Một tập belief states bao gồm trạng thái ban đầu và 2 trạng thái lân cận được tạo ra bằng cách hoán đổi ô trống với các ô liền kề hợp lệ, mô phỏng môi trường mù hoàn toàn.
+  - Đối với Belief State Search: Một tập belief states bao gồm trạng thái ban đầu và 2 trạng thái lân cận được tạo ra bằng cách hoán đổi ô trống với các ô liền kề hợp lệ, mô phỏng môi trường không quan sát.
   - Đối với Partial Observable Search (POS): Một tập belief states bao gồm các trạng thái có số 1 ở vị trí (0,0) (do quan sát một phần), được tạo từ trạng thái ban đầu và các trạng thái lân cận hợp lệ.
 + Trạng thái mục tiêu
   - Lưới 3x3 với thứ tự số từ 1 đến 8 và ô trống ở vị trí cuối cùng ([[1 2 3], [4 5 6], [7 8 0]]).
 + Không gian trạng thái
-  - Tập hợp tất cả các cấu hình có thể của lưới 3x3, bao gồm các trạng thái xác định và không xác định (do hoán đổi ô trống với các ô liền kề hợp lệ).
+  - Tập hợp tất cả các cấu hình có thể của lưới 3x3, bao gồm các trạng thái xác định và không xác định.
 + Hành động
-  - Di chuyển ô trống lên, xuống, trái, hoặc phải để hoán đổi với ô số liền kề. Các thuật toán trong nhóm này còn mô phỏng không xác định bằng cách hoán đổi ô trống với các ô liền kề hợp lệ.
+  - Di chuyển ô trống lên, xuống, trái, phải để hoán đổi với ô số liền kề. Các thuật toán trong nhóm này còn mô phỏng không xác định bằng việc di chuyển bình thường đồng thời kéo theo những hành động kế tiếp bằng cách tiếp tục hoán đổi ô trống với các ô liền kề hợp lệ.
 + Chi phí
   - Mỗi bước di chuyển có chi phí bằng 1, vì bài toán ưu tiên tìm đường đi ngắn nhất.
 + Giải pháp
-  - Dãy các trạng thái từ trạng thái ban đầu đến trạng thái mục tiêu, được tạo ra bởi các thuật toán AND-OR Search, Belief State Search, và Partial Observable Search (POS). Các thuật toán này duy trì tập belief states (tập hợp trạng thái có thể) và tìm kiếm đường dẫn để tất cả trạng thái trong belief state đạt mục tiêu.
+  - Dãy các trạng thái từ trạng thái ban đầu đến trạng thái mục tiêu, được tạo ra bởi các thuật toán AND-OR Search, Belief State Search, và Partial Observable Search (POS). Các thuật toán này duy trì tập belief states và tìm kiếm đường dẫn để tất cả trạng thái trong belief state đạt mục tiêu.
 
 Hình ảnh gif từng thuật toán cùng biểu đồ so sánh hiệu suất
 
@@ -119,8 +119,8 @@ Hình ảnh gif từng thuật toán cùng biểu đồ so sánh hiệu suất
 
 Nhận xét
 + AND-OR Search hoạt động trong môi trường không xác định. Thuật toán không thu hẹp nhánh AND, dẫn đến không gian trạng thái lớn nhất. Tuy nhiên, thời gian chạy thấp do chi phí xử lý mỗi trạng thái thấp: không gọi hàm heuristic để thu hẹp, chỉ thực hiện các thao tác đơn giản như kiểm tra mục tiêu và hoán đổi ô trống.
-+ Belief State Search hoạt động trong môi trường mù hoàn toàn, tạo trạng thái không xác định với xác suất. Thuật toán thu hẹp belief state (giữ 3 trạng thái tốt nhất theo heuristic), làm giảm không gian trạng thái so với AND-OR Search. Tuy nhiên, việc gọi hàm heuristic nhiều lần để thu hẹp belief state làm tăng chi phí xử lý mỗi trạng thái, dẫn đến thời gian chạy cao hơn.
-+ POS hoạt động trong môi trường quan sát một phần (vị trí số 1 ở (0,0)), tạo trạng thái không xác định với xác suất, và thu hẹp belief state (giữ 3 trạng thái tốt nhất). Quan sát giúp loại bỏ sớm các trạng thái không phù hợp, làm không gian trạng thái nhỏ nhất. Thời gian chạy trung bình do chi phí xử lý mỗi trạng thái cao: gọi hàm heuristic để thu hẹp belief state và kiểm tra quan sát. Số bước trung bình, phản ánh khả năng tập trung vào mục tiêu nhờ quan sát.
++ Belief State Search hoạt động trong môi trường không quan sát, tạo trạng thái không xác định với xác suất. Thuật toán thu hẹp belief state (giữ 3 trạng thái tốt nhất theo heuristic), làm giảm không gian trạng thái so với AND-OR Search. Tuy nhiên, việc gọi hàm heuristic nhiều lần để thu hẹp belief state làm tăng chi phí xử lý mỗi trạng thái, dẫn đến thời gian chạy cao hơn.
++ POS hoạt động trong môi trường quan sát một phần (vị trí số 1 ở (0,0)), tạo trạng thái không xác định với xác suất, và thu hẹp belief state (giữ 3 trạng thái tốt nhất). Quan sát giúp loại bỏ sớm các trạng thái không phù hợp, làm không gian trạng thái nhỏ nhất. Thời gian chạy trung bình do chi phí xử lý mỗi trạng thái. Số bước trung bình, phản ánh khả năng tập trung vào mục tiêu nhờ quan sát.
 
 Kết luận
 + POS là lựa chọn tốt nhất trong nhóm khi cần cân bằng giữa thời gian chạy và không gian trạng thái, nhờ quan sát giúp loại bỏ trạng thái không phù hợp và thu hẹp belief state hiệu quả.
@@ -152,13 +152,13 @@ Hình ảnh gif từng thuật toán cùng biểu đồ so sánh hiệu suất
 ![Nhóm 5](asset/gif/nhom5.gif)
 
 Nhận xét
-+ Backtracking Search: Thuật toán duyệt không gian tìm kiếm theo chiều sâu, kiểm tra ràng buộc và quay lui khi cần. Do không có cơ chế tối ưu hóa như MRV hay LCV, số trạng thái khám phá cao, nhưng chi phí mỗi bước thấp, dẫn đến thời gian chạy nhanh nhất trong nhóm. Phù hợp khi trạng thái ban đầu đơn giản, nhưng không hiệu quả với bài toán phức tạp do không gian tìm kiếm lớn.
-+ Forward Checking Search: Thuật toán sử dụng Forward Checking để thu hẹp domain sau mỗi lần gán, cùng với MRV (chọn ô có ít giá trị hợp lệ nhất) và LCV (chọn giá trị ít loại trừ nhất). Số trạng thái khám phá thấp hơn Backtracking nhờ cơ chế thu hẹp domain, nhưng thời gian chạy cao nhất do chi phí mỗi bước lớn. Phù hợp khi cần giảm không gian tìm kiếm, nhưng cần tối ưu chi phí tính toán.
-+ Min-Conflicts Search: Thuật toán bắt đầu từ trạng thái rỗng, gán giá trị và điều chỉnh để giảm xung đột, sử dụng Simulated Annealing để tránh cực trị địa phương. Số trạng thái khám phá thấp nhất nhờ chiến lược sửa lỗi từng bước, nhưng chi phí mỗi bước cao do tính toán xung đột. Thời gian chạy nằm giữa Backtracking và Forward Checking, phản ánh sự cân bằng giữa không gian và chi phí xử lý. Phù hợp khi trạng thái ban đầu gần mục tiêu.
-
++ Backtracking Search: Thuật toán duyệt không gian tìm kiếm theo chiều sâu, kiểm tra ràng buộc và quay lui khi cần. Do đó trạng thái khám phá cao, phù hợp khi trạng thái ban đầu đơn giản, nhưng không hiệu quả với bài toán phức tạp do không gian tìm kiếm lớn.
++ Forward Checking Search: Thuật toán sử dụng Forward Checking để thu hẹp domain sau mỗi lần gán, cùng với MRV (chọn ô có ít giá trị hợp lệ nhất) và LCV (chọn giá trị ít loại trừ nhất). Số trạng thái khám phá thấp hơn Backtracking nhờ cơ chế thu hẹp domain, phù hợp khi cần giảm không gian tìm kiếm.
++ Min-Conflicts Search: Thuật toán bắt đầu từ trạng thái rỗng, gán giá trị và điều chỉnh để giảm xung đột, sử dụng Simulated Annealing để tránh cực trị địa phương. Số trạng thái khám phá thấp nhất nhờ chiến lược sửa lỗi từng bước, nhưng chi phí mỗi bước cao do tính toán xung đột.
+  
 Kết luận:
 + Min-Conflicts Search là lựa chọn tốt nhất trong nhóm về không gian trạng thái, với thời gian chạy hợp lý. Nó hiệu quả khi trạng thái ban đầu gần mục tiêu, nhờ khả năng sửa lỗi từng bước.
-+ Backtracking Search nhanh nhất, nhưng tốn nhiều không gian trạng thái, phù hợp khi cần giải nhanh và không gian tìm kiếm không quá lớn.
++ Backtracking Search tốn nhiều không gian trạng thái, phù hợp cho không gian tìm kiếm không quá lớn.
 + Forward Checking Search hiệu quả về không gian, nhưng thời gian chạy cao do chi phí tính toán lớn. Cần tối ưu chi phí mỗi bước để cạnh tranh hơn, nhưng vẫn là lựa chọn tốt khi ưu tiên giảm không gian tìm kiếm.
 
 ## 2.6 Nhóm thuật toán học tăng cường (Reinforcement Learning)
@@ -170,7 +170,7 @@ Các thành phần chính của bài toán tìm kiếm và giải pháp
 + Không gian trạng thái
   - Tập hợp tất cả các cấu hình có thể của lưới 3x3, được tạo ra bằng cách hoán đổi ô trống với các ô liền kề hợp lệ. Thuật toán Q-Learning học chính sách tối ưu thông qua việc khám phá không gian trạng thái này.
 + Hành động
-  - Di chuyển ô trống lên, xuống, trái, hoặc phải để hoán đổi với ô số liền kề. Có 4 hành động tương ứng: 0 (trái), 1 (phải), 2 (xuống), 3 (lên).
+  - Di chuyển ô trống lên, xuống, trái, hoặc phải để hoán đổi với ô số liền kề.
 + Chi phí
   - Mỗi bước di chuyển có chi phí là 1, vì bài toán tập trung tìm đường đi ngắn nhất từ trạng thái ban đầu đến trạng thái mục tiêu.
 + Giải pháp
@@ -184,7 +184,7 @@ Nhận xét
 + Q-Learning: Thuật toán sử dụng chiến lược Epsilon-Greedy để cân bằng giữa khám phá và khai thác, cập nhật bảng Q dựa trên phần thưởng. Số trạng thái khám phá cao do Q-Learning cần thăm nhiều trạng thái trong quá trình học để xây dựng chính sách tối ưu. Thời gian chạy tương đối cao vì số lượng trạng thái lớn và chi phí tính toán mỗi bước bao gồm cập nhật Q-value, tính phần thưởng, và kiểm tra trạng thái lân cận. Tuy nhiên, Q-Learning đảm bảo hội tụ về chính sách tối ưu nếu có đủ thời gian học, phù hợp khi cần học chính sách dài hạn trong môi trường không xác định.
 
 Kết luận:
-+ Q-Learning là lựa chọn phù hợp trong nhóm học tăng cường cho bài toán 8-Puzzle khi cần học chính sách tối ưu mà không yêu cầu mô hình môi trường. Tuy nhiên, số trạng thái khám phá lớn và thời gian chạy cao, cho thấy nó kém hiệu quả hơn so với các thuật toán tìm kiếm khác về mặt không gian và thời gian.
++ Q-Learning có thể là lựu chọn không quá tối ưu cho bài toán 8-Puzzle do môi trường không quá phức tạp. Nó đặc biệt hiệu quả trong các bài toán ra quyết định tuần tự mà không biết trước mô hình môi trường (tức là không biết xác suất chuyển trạng thái hoặc phần thưởng cụ thể).
 
 # 3. Tác giả
 Dự án được thực hiện bởi:
