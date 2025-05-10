@@ -1121,129 +1121,196 @@ class EightPuzzle:
         return result, explored_states
 
     def min_conflicts_search(self, max_iterations=1000, max_no_improvement=20, timeout=2.0):
+        """
+        Min-Conflicts Search for CSP following the theoretical approach.
+        Starts with unassigned variables, assigns initial values, and iteratively
+        selects a conflicting variable to reassign with a value that minimizes conflicts.
+
+        Args:
+            max_iterations (int): Maximum number of iterations.
+            max_no_improvement (int): Maximum iterations without improvement before restart.
+            timeout (float): Maximum running time in seconds.
+
+        Returns:
+            tuple: (path, num_explored_states) if solution found,
+                   (None, num_explored_states) otherwise.
+        """
 
         def count_conflicts(state):
+            """
+            Count the number of constraint violations in the state.
 
+            Returns:
+                int: Number of conflicts.
+            """
             conflicts = 0
-            manhattan_distance = 0
             value_counts = defaultdict(int)
 
             # Constraint: (0,0) must be 1
-            if state[0][0] is not None and state[0][0] != 1:
-                conflicts += 5
+            if state[0][0] != 1:
+                conflicts += 1
 
-            # Constraint: Each number appears once
+            # Constraint: Each number appears exactly once
             for i in range(3):
                 for j in range(3):
                     val = state[i][j]
-                    if val is not None:
-                        value_counts[val] += 1
-                        if value_counts[val] > 1:
-                            conflicts += value_counts[val] - 1
-                        # Manhattan distance
-                        if val != 0 and val != self.goal[i][j]:
-                            goal_i, goal_j = divmod(val - 1, 3)
-                            manhattan_distance += abs(i - goal_i) + abs(j - goal_j)
+                    value_counts[val] += 1
+                    if value_counts[val] > 1:
+                        conflicts += value_counts[val] - 1
 
             # Row constraint: state[i][j+1] = state[i][j] + 1 (except blank)
             for i in range(3):
                 for j in range(2):
-                    if (state[i][j] is not None and state[i][j] != 0 and
-                            state[i][j + 1] is not None and state[i][j + 1] != 0):
+                    if state[i][j] != 0 and state[i][j + 1] != 0:
                         if state[i][j + 1] != state[i][j] + 1:
                             conflicts += 1
 
             # Column constraint: state[i+1][j] = state[i][j] + 3 (except blank)
             for j in range(3):
                 for i in range(2):
-                    if (state[i][j] is not None and state[i][j] != 0 and
-                            state[i + 1][j] is not None and state[i + 1][j] != 0):
+                    if state[i][j] != 0 and state[i + 1][j] != 0:
                         if state[i + 1][j] != state[i][j] + 3:
                             conflicts += 1
 
             # Solvability constraint (only check if state is complete)
-            if all(state[i][j] is not None for i in range(3) for j in range(3)) and not self.is_solvable(state):
-                conflicts += 5
+            if all(state[i][j] is not None for i in range(3) for j in range(3)):
+                if not self.is_solvable(state):
+                    conflicts += 1
 
-            # Add Manhattan heuristic
-            conflicts += manhattan_distance * 0.3
             return conflicts
 
-        def select_position(state, assigned_positions):
-            """Select unassigned position or position with highest conflicts."""
-            # Prefer unassigned positions
-            for i in range(3):
-                for j in range(3):
-                    if (i, j) not in assigned_positions:
-                        return i, j
-            # If all assigned, select position with highest conflicts
-            conflicts = []
-            for i in range(3):
-                for j in range(3):
-                    temp_state = [row[:] for row in state]
-                    original_value = temp_state[i][j]
-                    temp_state[i][j] = None
-                    base_conflicts = count_conflicts(tuple(tuple(row) for row in temp_state))
-                    temp_state[i][j] = original_value
-                    current_conflicts = count_conflicts(tuple(tuple(row) for row in temp_state))
-                    if current_conflicts > base_conflicts:
-                        conflicts.append((i, j, current_conflicts))
-            if conflicts:
-                return max(conflicts, key=lambda x: x[2])[:2]
-            return None
+        def get_conflicting_positions(state):
+            """
+            Identify positions that cause conflicts.
 
-        def select_value(state, i, j, current_value, assigned_values):
-            """Select value with least conflicts, prioritizing goal state value."""
+            Returns:
+                list: List of (i, j) positions with conflicts.
+            """
+            conflicts = []
+            value_counts = defaultdict(int)
+            conflict_positions = set()
+
+            # Check (0,0) must be 1
+            if state[0][0] != 1:
+                conflict_positions.add((0, 0))
+
+            # Check unique values
+            for i in range(3):
+                for j in range(3):
+                    val = state[i][j]
+                    value_counts[val] += 1
+                    if value_counts[val] > 1:
+                        conflict_positions.add((i, j))
+
+            # Check row constraints
+            for i in range(3):
+                for j in range(2):
+                    if state[i][j] != 0 and state[i][j + 1] != 0:
+                        if state[i][j + 1] != state[i][j] + 1:
+                            conflict_positions.add((i, j))
+                            conflict_positions.add((i, j + 1))
+
+            # Check column constraints
+            for j in range(3):
+                for i in range(2):
+                    if state[i][j] != 0 and state[i + 1][j] != 0:
+                        if state[i + 1][j] != state[i][j] + 3:
+                            conflict_positions.add((i, j))
+                            conflict_positions.add((i + 1, j))
+
+            # Check solvability
+            if all(state[i][j] is not None for i in range(3) for j in range(3)):
+                if not self.is_solvable(state):
+                    for i in range(3):
+                        for j in range(3):
+                            conflict_positions.add((i, j))
+
+            return list(conflict_positions)
+
+        def select_min_conflict_value(state, i, j, current_value, assigned_values):
+            """
+            Select a value for position (i, j) that minimizes conflicts, possibly by swapping.
+
+            Args:
+                state: Current state of the puzzle.
+                i, j: Position to assign a value.
+                current_value: Current value at (i, j).
+                assigned_values: Set of values already used.
+
+            Returns:
+                tuple: (new_value, swap_pos) where new_value is the value to assign,
+                       and swap_pos is the position to swap with (or None if no swap).
+            """
             value_scores = []
+            state_copy = [row[:] for row in state]
+
+            # Try swapping with other positions
+            for r in range(3):
+                for c in range(3):
+                    if (r, c) != (i, j):
+                        state_copy = [row[:] for row in state]
+                        state_copy[i][j], state_copy[r][c] = state_copy[r][c], state_copy[i][j]
+                        conflicts = count_conflicts(state_copy)
+                        value_scores.append((conflicts, state[r][c], (r, c)))
+
+            # Try assigning new values not in assigned_values
             for value in range(9):
                 if value not in assigned_values - ({current_value} if current_value is not None else set()):
                     if (i, j) == (0, 0) and value != 1:
                         continue
-                    temp_state = [row[:] for row in state]
-                    temp_state[i][j] = value
-                    conflicts = count_conflicts(tuple(tuple(row) for row in temp_state))
-                    if value == self.goal[i][j]:
-                        conflicts -= 3  # Prioritize goal state value
-                    value_scores.append((conflicts, value))
+                    state_copy = [row[:] for row in state]
+                    state_copy[i][j] = value
+                    conflicts = count_conflicts(state_copy)
+                    value_scores.append((conflicts, value, None))
+
             if not value_scores:
-                return None
+                return None, None
+
             value_scores.sort()
-            return value_scores[0][1]
+            return value_scores[0][1], value_scores[0][2]
+
+        def initialize_state():
+            """
+            Generate a random initial assignment for all variables.
+
+            Returns:
+                list: A 3x3 matrix with a valid initial assignment.
+            """
+            state = [[None for _ in range(3)] for _ in range(3)]
+            numbers = list(range(9))
+            random.shuffle(numbers)
+            state[0][0] = 1  # Enforce (0,0) = 1
+            numbers.remove(1)
+            idx = 0
+            for i in range(3):
+                for j in range(3):
+                    if (i, j) != (0, 0):
+                        state[i][j] = numbers[idx]
+                        idx += 1
+            return state
 
         start_time = time.time()
-        current_state = [[None for _ in range(3)] for _ in range(3)]  # Empty state
-        path = [tuple(tuple(None if x is None else x for x in row) for row in current_state)]
+        current_state = initialize_state()
+        path = [tuple(tuple(row) for row in current_state)]
         num_explored_states = 1
-        assigned_values = set()
-        assigned_positions = set()
         best_conflicts = float('inf')
-        best_state = current_state
+        best_state = [row[:] for row in current_state]
         no_improvement_count = 0
-        temperature = 2.0  # Reduced initial temperature
-
-        # Initialize (0,0) with 1 to satisfy constraint
-        current_state[0][0] = 1
-        assigned_values.add(1)
-        assigned_positions.add((0, 0))
-        path.append(tuple(tuple(None if x is None else x for x in row) for row in current_state))
-        num_explored_states += 1
+        assigned_values = set(range(9))
+        assigned_positions = {(i, j) for i in range(3) for j in range(3)}
 
         for iteration in range(max_iterations):
             if time.time() - start_time > timeout:
                 print("Timeout reached")
                 return None, num_explored_states
 
-            current_state_tuple = tuple(tuple(None if x is None else x for x in row) for row in current_state)
-            if current_state_tuple == self.goal and all(
-                    current_state[i][j] is not None for i in range(3) for j in range(3)):
+            current_state_tuple = tuple(tuple(row) for row in current_state)
+            conflicts = count_conflicts(current_state)
+
+            # Check if current state is a solution
+            if current_state_tuple == self.goal and self.is_solvable(current_state):
                 print(f"Solution found after {iteration} iterations")
                 return path, num_explored_states
-
-            conflicts = count_conflicts(current_state_tuple)
-            if conflicts == 0 and all(current_state[i][j] is not None for i in range(3) for j in range(3)):
-                if self.is_solvable(current_state):
-                    print(f"Solution found after {iteration} iterations")
-                    return path, num_explored_states
 
             if conflicts < best_conflicts:
                 best_conflicts = conflicts
@@ -1252,67 +1319,63 @@ class EightPuzzle:
             else:
                 no_improvement_count += 1
 
+            # Restart with a new random assignment if no improvement
             if no_improvement_count >= max_no_improvement:
-                current_state = [[None for _ in range(3)] for _ in range(3)]
-                assigned_values = set()
-                assigned_positions = set()
-                current_state[0][0] = 1
-                assigned_values.add(1)
-                assigned_positions.add((0, 0))
-                current_state_tuple = tuple(tuple(None if x is None else x for x in row) for row in current_state)
+                current_state = initialize_state()
+                assigned_values = set(range(9))
+                assigned_positions = {(i, j) for i in range(3) for j in range(3)}
+                current_state_tuple = tuple(tuple(row) for row in current_state)
                 path.append(current_state_tuple)
                 num_explored_states += 1
-                conflicts = count_conflicts(current_state_tuple)
+                conflicts = count_conflicts(current_state)
                 if conflicts < best_conflicts:
                     best_conflicts = conflicts
                     best_state = [row[:] for row in current_state]
                 no_improvement_count = 0
-                temperature = 5.0
                 continue
 
-            pos = select_position(current_state, assigned_positions)
-            if not pos:
-                current_state = [[None for _ in range(3)] for _ in range(3)]
-                assigned_values = set()
-                assigned_positions = set()
-                current_state[0][0] = 1
-                assigned_values.add(1)
-                assigned_positions.add((0, 0))
-                current_state_tuple = tuple(tuple(None if x is None else x for x in row) for row in current_state)
-                path.append(current_state_tuple)
-                num_explored_states += 1
-                continue
+            # Select a conflicting position
+            conflicting_positions = get_conflicting_positions(current_state)
+            if not conflicting_positions:
+                if conflicts == 0 and self.is_solvable(current_state):
+                    print(f"Solution found after {iteration} iterations")
+                    return path, num_explored_states
+                else:
+                    # No conflicts but not a solution, restart
+                    current_state = initialize_state()
+                    assigned_values = set(range(9))
+                    assigned_positions = {(i, j) for i in range(3) for j in range(3)}
+                    current_state_tuple = tuple(tuple(row) for row in current_state)
+                    path.append(current_state_tuple)
+                    num_explored_states += 1
+                    continue
 
-            i, j = pos
+            # Randomly select a conflicting position
+            i, j = random.choice(conflicting_positions)
             current_value = current_state[i][j]
 
-            # Simulated Annealing with lower probability for random choices
-            if random.random() < min(0.2, temperature / 20.0):
-                remaining = [v for v in range(9) if
-                             v not in assigned_values - ({current_value} if current_value is not None else set())]
-                if remaining and (i != 0 or j != 0 or 1 in remaining):
-                    value = random.choice(remaining)
-                else:
-                    continue
-            else:
-                value = select_value(current_state, i, j, current_value, assigned_values)
-                if value is None:
-                    continue
+            # Select a value (or swap) that minimizes conflicts
+            new_value, swap_pos = select_min_conflict_value(current_state, i, j, current_value, assigned_values)
 
+            if new_value is None:
+                continue
+
+            # Update state
             current_state_list = [row[:] for row in current_state]
-            current_state_list[i][j] = value
-            if current_value is not None:
+            if swap_pos:
+                r, c = swap_pos
+                current_state_list[i][j], current_state_list[r][c] = current_state_list[r][c], current_state_list[i][j]
+            else:
+                current_state_list[i][j] = new_value
                 assigned_values.remove(current_value)
-                assigned_positions.remove((i, j))
-            assigned_values.add(value)
-            assigned_positions.add((i, j))
+                assigned_values.add(new_value)
+
             current_state = current_state_list
-            current_state_tuple = tuple(tuple(None if x is None else x for x in row) for row in current_state)
+            current_state_tuple = tuple(tuple(row) for row in current_state)
             path.append(current_state_tuple)
             num_explored_states += 1
 
-            temperature *= 0.99  # Faster cooling
-
+        # Check if the best state is a solution
         if tuple(tuple(row) for row in best_state) == self.goal and self.is_solvable(best_state):
             print("Returning best state as solution")
             return path, num_explored_states
@@ -1852,7 +1915,7 @@ def main_game(initial_state, goal_state):
                 if solution_index < len(solution):
                     draw_grid(solution[solution_index], algo_grid_x, algo_grid_y, algo_tile_size)
                     solution_index += 1
-                    pygame.time.wait(500)  # Dùng wait thay vì delay để không làm chậm vòng lặp chính
+                    pygame.time.wait(200)  # delay
                 else:
                     draw_grid(solution[-1], algo_grid_x, algo_grid_y, algo_tile_size)
             else:
@@ -1971,12 +2034,60 @@ def main_game(initial_state, goal_state):
                         else:
                             display_state = initial_state
 
-                        # Đo thời gian chạy thuật toán mà không vẽ giao diện
-                        start_time = timeit.default_timer()
+                        if label == "MinConf":
+                            # Vẽ giao diện với trạng thái rỗng
+                            screen.blit(background, (0, 0))
+                            render_text_with_border(screen, "8-Puzzle Solver", title_font, (255, 0, 0), (0, 0, 0),
+                                                    (WIDTH // 2, 50))
+                            render_text_with_border(screen, "Initial State", label_font, (0, 255, 0), (0, 0, 0),
+                                                    (initial_grid_x + (small_tile_size * 3) // 2, initial_grid_y - 20))
+                            draw_grid(initial_state, initial_grid_x, initial_grid_y, small_tile_size)
+                            render_text_with_border(screen, "Goal State", label_font, (0, 255, 0), (0, 0, 0),
+                                                    (goal_grid_x + (small_tile_size * 3) // 2, goal_grid_y - 20))
+                            draw_grid(goal_state, goal_grid_x, goal_grid_y, small_tile_size)
+                            draw_grid(display_state, algo_grid_x, algo_grid_y, algo_tile_size)
+                            render_text_with_border(screen, f"Running Time: {elapsed_time:.2f} ms", info_font,
+                                                    (0, 128, 0), (0, 0, 0),
+                                                    (algo_grid_x + 225, algo_grid_y + 500))
+                            render_text_with_border(screen, f"Steps: {steps}", info_font, (0, 128, 0), (0, 0, 0),
+                                                    (algo_grid_x + 225, algo_grid_y + 550))
+                            for lbl, rct in buttons:
+                                corner_radius = 10
+                                button_color = (255, 255, 0) if selected_button == lbl else (26, 125, 255)
+                                pygame.draw.rect(screen, button_color, rct, border_radius=corner_radius)
+                                pygame.draw.rect(screen, (41, 128, 185), rct, 2, border_radius=corner_radius)
+                                render_text_with_border(screen, lbl, button_font, (255, 255, 255), (0, 0, 0),
+                                                        (rct.centerx, rct.centery))
+                            corner_radius = 10
+                            info_button_color = (255, 255, 0) if selected_button == "INFO" else (26, 125, 255)
+                            pygame.draw.rect(screen, info_button_color, info_button_rect, border_radius=corner_radius)
+                            pygame.draw.rect(screen, (41, 128, 185), info_button_rect, 2, border_radius=corner_radius)
+                            render_text_with_border(screen, "INFO", button_font, (255, 255, 255), (0, 0, 0),
+                                                    (info_button_rect.centerx, info_button_rect.centery))
+                            view_button_color = (255, 255, 0) if selected_button == "VIEW" else (26, 125, 255)
+                            pygame.draw.rect(screen, view_button_color, view_button_rect, border_radius=corner_radius)
+                            pygame.draw.rect(screen, (41, 128, 185), view_button_rect, 2, border_radius=corner_radius)
+                            render_text_with_border(screen, "VIEW", button_font, (255, 255, 255), (0, 0, 0),
+                                                    (view_button_rect.centerx, view_button_rect.centery))
+                            reset_button_color = (255, 255, 0) if selected_button == "RESET" else (26, 125, 255)
+                            pygame.draw.rect(screen, reset_button_color, reset_button_rect, border_radius=corner_radius)
+                            pygame.draw.rect(screen, (41, 128, 185), reset_button_rect, 2, border_radius=corner_radius)
+                            render_text_with_border(screen, "RESET", button_font, (255, 255, 255), (0, 0, 0),
+                                                    (reset_button_rect.centerx, reset_button_rect.centery))
+                            back_button_color = (255, 255, 0) if selected_button == "BACK" else (26, 125, 255)
+                            pygame.draw.rect(screen, back_button_color, back_button_rect, border_radius=corner_radius)
+                            pygame.draw.rect(screen, (41, 128, 185), back_button_rect, 2, border_radius=corner_radius)
+                            render_text_with_border(screen, "BACK", button_font, (255, 255, 255), (0, 0, 0),
+                                                    (back_button_rect.centerx, back_button_rect.centery))
+                            pygame.display.flip()
+                            pygame.time.wait(1000)  # Chờ 1 giây để hiển thị trạng thái rỗng
 
+                            # Đo thời gian chạy thuật toán
+                        start_time = timeit.default_timer()
                         if label == "MinConf":
                             puzzle = EightPuzzle([[None, None, None], [None, None, None], [None, None, None]],
                                                  goal_state)
+
                             solution, num_explored_states = puzzle.min_conflicts_search()
                             elapsed_time = (timeit.default_timer() - start_time) * 1000
                             steps = len(solution) - 1 if solution else 0
