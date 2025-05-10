@@ -195,7 +195,7 @@ Dự án được thực hiện bởi:
 Dự án này là đồ án cá nhân phục vụ việc học tập, đồng thời nhằm mục đích nghiên cứu và ứng dụng các thuật toán tìm kiếm AI vào bài toán 8-Puzzle, với trọng tâm là tối ưu hóa hiệu suất và trải nghiệm người dùng.
 
 # 4. Tài liệu tham khảo
-[1] S. J. Russell and P. Norvig, Artificial Intelligence: A Modern Approach, 4th ed. Pearson, 2020.
-[2] S. J. Russell and P. Norvig, Artificial Intelligence: A Modern Approach, 3rd ed., Pearson, 2016.
-[3] Stanford University. (2020). Reinforcement Learning and Control - CS229, Fall 2020. 
-[4] 1 số tool AI như: ChatGPT, Grok,...
++ [1] S. J. Russell and P. Norvig, Artificial Intelligence: A Modern Approach, 4th ed. Pearson, 2020.
++ [2] S. J. Russell and P. Norvig, Artificial Intelligence: A Modern Approach, 3rd ed., Pearson, 2016.
++ [3] Stanford University. (2020). Reinforcement Learning and Control - CS229, Fall 2020. 
++ [4] 1 số tool AI như: ChatGPT, Grok,...
