@@ -141,9 +141,10 @@ Các thành phần chính của bài toán tìm kiếm và giải pháp
     * Ràng buộc cột: Ô (i+1,j) = ô(i,j) + 3 (trừ ô trống).
     * Trạng thái phải có thể giải được (số nghịch đảo chẵn).
 + Hành động
-  - Gán giá trị từ 0 đến 8 vào các ô chưa gán, đảm bảo thỏa mãn các ràng buộc. Các thuật toán trong nhóm này sử dụng các chiến lược như Backtracking, Forward Checking, và Min-Conflicts để tìm giải pháp.
+  - Backtracking và Forward Checking bắt đầu từ trạng thái rỗng, gán giá trị từng bước, sử dụng chiến lược quay lui (Backtracking) hoặc thu hẹp domain (Forward Checking) để tìm giải pháp.
+  - Min-Conflicts bắt đầu từ một trạng thái đầy đủ, gán giá trị ngẫu nhiên cho tất cả các biến, tìm biến có xung đột gán lại sao cho xung đột thấp nhất. Lặp lại nếu chưa tìm được giải pháp thì chuyển sang trạng thái mới.
 + Chi phí
-  - Mỗi bước gán giá trị có chi phí bằng 1. Bài toán ưu tiên tìm trạng thái thỏa mãn tất cả ràng buộc với số bước tối thiểu.
+  - Bài toán không tập trung vào khái niệm chi phí, nó ưu tiên tìm một trạng thái thỏa mãn tất cả các ràng buộc, không tập trung vào việc tối ưu hóa số bước gán giá trị.
 + Giải pháp
   - Dãy các trạng thái từ trạng thái rỗng đến trạng thái mục tiêu, được tạo ra bởi các thuật toán Backtracking Search, Forward Checking Search, và Min-Conflicts Search. Các thuật toán này đảm bảo trạng thái cuối cùng thỏa mãn tất cả ràng buộc và khớp với mục tiêu.
 
@@ -172,7 +173,7 @@ Các thành phần chính của bài toán tìm kiếm và giải pháp
 + Hành động
   - Di chuyển ô trống lên, xuống, trái, hoặc phải để hoán đổi với ô số liền kề.
 + Chi phí
-  - Mỗi bước di chuyển có chi phí là 1, vì bài toán tập trung tìm đường đi ngắn nhất từ trạng thái ban đầu đến trạng thái mục tiêu.
+  - Trong thuật toán này chi phí được hiểu cách khác là phần thưởng. Mỗi bước di chuyển được gán một phần thưởng âm nhỏ, vì bài toán tập trung vào tối ưu hóa tổng phần thưởng tích lũy để tìm đường đi từ trạng thái ban đầu đến trạng thái mục tiêu. Agent nhận phần thưởng lớn khi đạt trạng thái mục tiêu.
 + Giải pháp
   - Một dãy các trạng thái từ trạng thái ban đầu đến trạng thái mục tiêu, được tạo ra bởi thuật toán Q-Learning. Thuật toán học chính sách tối ưu bằng cách cập nhật bảng Q (Q-table) dựa trên phần thưởng, sau đó trích xuất đường đi từ bảng Q đã học.
 
@@ -194,4 +195,7 @@ Dự án được thực hiện bởi:
 Dự án này là đồ án cá nhân phục vụ việc học tập, đồng thời nhằm mục đích nghiên cứu và ứng dụng các thuật toán tìm kiếm AI vào bài toán 8-Puzzle, với trọng tâm là tối ưu hóa hiệu suất và trải nghiệm người dùng.
 
 # 4. Tài liệu tham khảo
-....
+[1] S. J. Russell and P. Norvig, Artificial Intelligence: A Modern Approach, 4th ed. Pearson, 2020.
+[2] S. J. Russell and P. Norvig, Artificial Intelligence: A Modern Approach, 3rd ed., Pearson, 2016.
+[3] Stanford University. (2020). Reinforcement Learning and Control - CS229, Fall 2020. 
+[4] 1 số tool AI như: ChatGPT, Grok,...
