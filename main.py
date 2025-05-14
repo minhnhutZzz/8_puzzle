@@ -515,7 +515,7 @@ class EightPuzzle:
                 and_states = {neighbor}  # Trạng thái bình thường
 
                 # Tạo trạng thái không xác định với xác suất 50%
-                if random.random() < 0.7:  # Xác suất 50%
+                if random.random() < 0.5:  # Xác suất 50%
                     i, j = self.find_blank(neighbor)
                     directions = [(0, -1), (0, 1), (1, 0), (-1, 0)]
                     valid_directions = [(di, dj) for di, dj in directions if 0 <= i + di < 3 and 0 <= j + dj < 3]
@@ -543,50 +543,33 @@ class EightPuzzle:
             current_state = random.choice(neighbors)
         return current_state
 
-    def bfs_for_belief(self, start_state, max_depth=10):
-        """
-        Chạy BFS từ trạng thái start_state để tìm các trạng thái lân cận trong max_depth bước.
-        Trả về: Tập hợp các trạng thái lân cận (giới hạn tối đa 5 trạng thái).
-        """
-        queue = deque([(start_state, 0)])
-        visited = {start_state}
-        states = set()
 
-        while queue and len(states) < 5:  # Giới hạn số trạng thái
-            state, depth = queue.popleft()
-            if depth < max_depth:
-                for neighbor in self.get_neighbors(state):
-                    if neighbor not in visited:
-                        visited.add(neighbor)
-                        queue.append((neighbor, depth + 1))
-                        states.add(neighbor)
-        return states
+    def belief_state_search(self, initial_belief, max_steps=1000):
 
-    def belief_state_search(self, initial_belief, max_steps=5000):
         initial_belief = set(initial_belief)
         explored = set()
         num_explored_states = 0
-        belief_states_path = [list(initial_belief)]
-        total_steps = 0
+        belief_states_path = [list(initial_belief)]  # Lưu đường đi các belief states
 
-        # Khởi tạo explored states
+
+        # Khởi tạo tập trạng thái đã khám phá
         for state in initial_belief:
             explored.add(state)
             num_explored_states += 1
 
-        belief_queue = deque([(initial_belief, [])])
-        visited = set()
+        belief_queue = deque([(initial_belief, [])])  # Hàng đợi lưu (belief state, đường đi)
+        visited = set()  # Tập hợp lưu các belief states đã thăm
 
         while belief_queue and num_explored_states < max_steps:
             belief_state, path = belief_queue.popleft()
             belief_state_tuple = frozenset(belief_state)
 
-            # Kiểm tra mục tiêu: Tất cả trạng thái trong belief state phải là goal
+            # Kiểm tra mục tiêu: Tất cả trạng thái trong belief state phải là mục tiêu
             if all(state == self.goal for state in belief_state):
                 total_steps = 0
                 for initial_state in initial_belief:
                     self.initial = initial_state
-                    solution, _ = self.bfs()
+                    solution, _ = self.bfs()  # Dùng BFS để tính đường đi từ trạng thái ban đầu đến mục tiêu
                     if solution:
                         total_steps += len(solution) - 1
                     else:
@@ -594,21 +577,22 @@ class EightPuzzle:
                 belief_states_path.append([self.goal] * len(initial_belief))
                 return belief_states_path, explored, total_steps
 
+            # Bỏ qua nếu belief state đã thăm
             if belief_state_tuple in visited:
                 continue
             visited.add(belief_state_tuple)
 
             # Duyệt qua các hành động (lên, xuống, trái, phải)
             for action in range(4):
-                new_belief = set()
+                new_belief = set()  # Belief state mới sau hành động
                 for state in belief_state:
-                    neighbors = self.get_neighbors(state)
+                    neighbors = self.get_neighbors(state)  # Lấy các trạng thái lân cận
                     if action < len(neighbors):
-                        # Thêm trạng thái xác định
+                        # Thêm trạng thái xác định (kết quả hành động)
                         next_state = neighbors[action]
                         new_belief.add(next_state)
 
-                        # Tạo trạng thái không xác định (chỉ với xác suất 10%)
+                        # Thêm trạng thái không xác định với xác suất 10%
                         if random.random() < 0.1:
                             i, j = None, None
                             for r in range(3):
@@ -617,51 +601,36 @@ class EightPuzzle:
                                         i, j = r, c
                                         break
 
-                            directions = [(0, -1), (0, 1), (1, 0), (-1, 0)]  # Lên, xuống, phải, trái
+                            directions = [(0, -1), (0, 1), (1, 0), (-1, 0)]  # Hướng di chuyển: lên, xuống, phải, trái
                             valid_directions = [(di, dj) for di, dj in directions if
                                                 0 <= i + di < 3 and 0 <= j + dj < 3]
                             if valid_directions:
-                                di, dj = random.choice(valid_directions)
+                                di, dj = random.choice(valid_directions)  # Chọn hướng ngẫu nhiên
                                 ni, nj = i + di, j + dj
                                 state_list = [list(row) for row in next_state]
                                 state_list[i][j], state_list[ni][nj] = state_list[ni][nj], state_list[i][j]
                                 uncertain_state = tuple(tuple(row) for row in state_list)
-                                new_belief.add(uncertain_state)
+                                new_belief.add(uncertain_state)  # Thêm trạng thái không xác định
                     else:
-                        # Nếu hành động không hợp lệ, giữ nguyên trạng thái
+                        # Giữ nguyên trạng thái nếu hành động không hợp lệ
                         new_belief.add(state)
 
-                # Thu hẹp belief state: Chỉ giữ 3 trạng thái gần mục tiêu nhất
+                # Thu hẹp belief state: Giữ 3 trạng thái gần mục tiêu nhất
                 if new_belief:
-                    new_belief = set(sorted(new_belief, key=self.heuristic)[:3])  # Giữ 3 trạng thái tốt nhất
+                    new_belief = set(
+                        sorted(new_belief, key=self.heuristic)[:3])  # Sắp xếp theo x1x, giữ 3 trạng thái
 
+                    # Cập nhật trạng thái đã khám phá
                     for state in new_belief:
                         if state not in explored:
                             explored.add(state)
                             num_explored_states += 1
+                    # Thêm belief state mới vào hàng đợi và đường đi
                     belief_queue.append((new_belief, path + [min(belief_state, key=self.heuristic)]))
                     belief_states_path.append(list(new_belief))
 
+
         return None, explored, 0
-
-    def optimized_bfs_for_belief(self, start_state, max_depth=1):
-        queue = deque([(start_state, 0)])
-        visited = {start_state}
-        states = [(self.heuristic(start_state), start_state)]
-
-        while queue:
-            state, depth = queue.popleft()
-            if depth < max_depth:
-                for neighbor in self.get_neighbors(state):
-                    if neighbor not in visited:
-                        visited.add(neighbor)
-                        queue.append((neighbor, depth + 1))
-                        states.append((self.heuristic(neighbor), neighbor))
-
-        states.sort()
-        return {state for _, state in states[:10]}
-
-
 
     def get_observation(self, state):
         """
@@ -677,9 +646,6 @@ class EightPuzzle:
     def find_states_with_one_at_00(self, start_state, max_states=3):  # Giảm từ 6 xuống 3
         """
         Tìm các trạng thái có số 1 ở vị trí (0,0) bằng BFS.
-        start_state: Trạng thái ban đầu.
-        max_states: Số trạng thái tối đa cần tìm là 3.
-        Trả về: Danh sách các trạng thái (dạng tuple) có số 1 ở (0,0).
         """
         queue = deque([(start_state, [])])
         visited = {start_state}
@@ -713,7 +679,6 @@ class EightPuzzle:
     def partial_observable_search(self):
         """
         Partial Observable Search: Tìm kiếm trên không gian belief states với số 1 ở (0,0).
-        Trả về: (belief_states_path, explored_states, total_steps) hoặc (None, explored_states, 0).
         """
         # Khởi tạo initial_belief với 3 trạng thái có số 1 ở (0,0)
         initial_belief = self.find_states_with_one_at_00(self.initial, max_states=3)
@@ -777,10 +742,6 @@ class EightPuzzle:
     def is_valid_assignment(self, state, pos, value):
         """
         Kiểm tra xem việc gán giá trị cho ô pos có thỏa mãn các ràng buộc không.
-        state: Ma trận hiện tại (có thể chứa None).
-        pos: Vị trí ô (i,j).
-        value: Giá trị cần gán (0-8).
-        Trả về: True nếu hợp lệ, False nếu không.
         """
         i, j = pos
         # Ràng buộc: Ô (0,0) phải là 1
@@ -810,7 +771,7 @@ class EightPuzzle:
     def is_solvable(self, state):
         """
         Kiểm tra xem ma trận có solvable không (số nghịch đảo chẵn).
-        state: Ma trận 3x3 (có thể chứa None).
+
         """
         flat = [state[i][j] for i in range(3) for j in range(3) if state[i][j] is not None and state[i][j] != 0]
         inversions = 0
@@ -822,23 +783,16 @@ class EightPuzzle:
 
     def backtracking_search(self, depth_limit=9):
         """
-        Backtracking Search for CSP: Assign values to cells from an empty matrix.
-        Each step assigns a value to a variable (cell) and checks constraints.
-        Backtracks if no valid assignment is possible.
-
-        Args:
-            depth_limit (int): Maximum number of cells to assign (9 for 3x3 matrix).
-
-        Returns:
-            tuple: (path, explored_states) if solution found, (None, explored_states) otherwise.
-            - path: List of states from empty to goal.
-            - explored_states: List of explored states during search.
+        Tìm kiếm Backtracking cho CSP: Gán giá trị cho các ô từ ma trận rỗng, quay lui khi gặp ngõ cụt.
         """
-        visited = set()  # Store visited states to avoid cycles
-        explored_states = []  # Store all explored states
-        path = []  # Store the path from empty to goal
+        visited = set()  # Tập hợp lưu các trạng thái đã thăm
+        explored_states = []  # Danh sách lưu các trạng thái đã khám phá
+        path = []  # Danh sách lưu đường đi từ trạng thái rỗng đến mục tiêu
 
         def is_valid_assignment(state, pos, value):
+            """
+            Kiểm tra xem việc gán giá trị cho ô có thỏa mãn các ràng buộc không.
+            """
             i, j = pos
             # Ràng buộc: Ô (0,0) phải là 1
             if i == 0 and j == 0 and value != 1:
@@ -850,14 +804,13 @@ class EightPuzzle:
                     if (r, c) != pos and state[r][c] == value:
                         return False
 
-            # Chỉ kiểm tra các ô liền kề
-            # Ràng buộc theo hàng: ô(i,j+1) = ô(i,j) + 1 (trừ ô trống)
+            # Ràng buộc hàng: ô(i,j+1) = ô(i,j) + 1 (trừ ô trống)
             if j > 0 and state[i][j - 1] is not None and value != 0 and state[i][j - 1] != value - 1:
                 return False
             if j < 2 and state[i][j + 1] is not None and value != 0 and state[i][j + 1] != value + 1:
                 return False
 
-            # Ràng buộc theo cột: ô(i+1,j) = ô(i,j) + 3 (trừ ô trống)
+            # Ràng buộc cột: ô(i+1,j) = ô(i,j) + 3 (trừ ô trống)
             if i > 0 and state[i - 1][j] is not None and value != 0 and state[i - 1][j] != value - 3:
                 return False
             if i < 2 and state[i + 1][j] is not None and value != 0 and state[i + 1][j] != value + 3:
@@ -867,13 +820,7 @@ class EightPuzzle:
 
         def is_solvable(state):
             """
-            Check if the matrix is solvable (even number of inversions).
-
-            Args:
-                state: Current matrix (may contain None).
-
-            Returns:
-                bool: True if solvable, False otherwise.
+            Kiểm tra xem trạng thái có thể giải được bằng cách đếm số nghịch đảo.
             """
             flat = [state[i][j] for i in range(3) for j in range(3) if state[i][j] is not None and state[i][j] != 0]
             inversions = 0
@@ -885,80 +832,60 @@ class EightPuzzle:
 
         def backtrack(state, assigned, pos_index):
             """
-            Recursive function for backtracking.
-
-            Args:
-                state: Current matrix (may contain None).
-                assigned: Set of assigned values.
-                pos_index: Index of the current cell being assigned (0-8).
-
-            Returns:
-                list: Path to solution if found, None otherwise.
+            Hàm đệ quy thực hiện backtracking để gán giá trị cho các ô.
             """
-            # Base case: All cells assigned
+            # Kiểm tra điều kiện dừng: Đã gán hết 9 ô
             if pos_index == 9:
                 state_tuple = tuple(tuple(row) for row in state)
                 if state_tuple == self.goal and is_solvable(state):
-                    path.append(state_tuple)
+                    path.append(state_tuple)  # Thêm trạng thái mục tiêu vào đường đi
                     return path
                 return None
 
-            # Get the next cell position
+            # Tính vị trí ô hiện tại
             i, j = divmod(pos_index, 3)
             if i >= 3 or j >= 3:
                 return None
 
-            # Create a state tuple for checking visited states
+            # Kiểm tra trạng thái đã thăm chưa
             state_tuple = tuple(tuple(row if row is not None else (None, None, None)) for row in state)
             if state_tuple in visited:
                 return None
             visited.add(state_tuple)
-            explored_states.append(state_tuple)
+            explored_states.append(state_tuple)  # Thêm trạng thái vào danh sách đã khám phá
 
-            # Try assigning each possible value
+            # Thử gán từng giá trị (0-8)
             for value in range(9):
                 if value not in assigned and is_valid_assignment(state, (i, j), value):
-                    # Assign the value
-                    new_state = [row[:] for row in state]
-                    new_state[i][j] = value
-                    new_assigned = assigned | {value}
+                    new_state = [row[:] for row in state]  # Tạo bản sao trạng thái
+                    new_state[i][j] = value  # Gán giá trị mới
+                    new_assigned = assigned | {value}  # Cập nhật tập hợp giá trị đã gán
 
-                    # Add current state to path before recursion
-                    path.append(state_tuple)
+                    path.append(state_tuple)  # Thêm trạng thái hiện tại vào đường đi
 
-                    # Recurse to the next cell
+                    # Đệ quy cho ô tiếp theo
                     result = backtrack(new_state, new_assigned, pos_index + 1)
                     if result is not None:
                         return result
 
-                    # Backtrack: Remove the state from path
-                    path.pop()
+                    path.pop()  # Quay lui: Xóa trạng thái nếu không thành công
 
             return None
 
-        # Initialize empty matrix and start backtracking
+        # Khởi tạo trạng thái rỗng
         empty_state = [[None for _ in range(3)] for _ in range(3)]
-        result = backtrack(empty_state, set(), 0)
-        return result, explored_states
+        result = backtrack(empty_state, set(), 0)  # Bắt đầu backtracking từ ô đầu tiên
+        return result, explored_states  # Trả về đường đi và danh sách trạng thái đã khám phá
 
     def forward_checking_search(self, depth_limit=9):
         """
         Forward Checking Search cho CSP: Gán giá trị cho các ô từ ma trận rỗng với Forward Checking, MRV, và LCV.
-        depth_limit: Số ô tối đa được gán (9 cho ma trận 3x3).
-        Trả về: (path, explored_states) hoặc (None, explored_states).
         """
         visited = set()  # Lưu các trạng thái đã thăm
         explored_states = []  # Lưu các trạng thái đã khám phá
         path = []  # Lưu đường đi từ rỗng đến mục tiêu
 
         def get_domain(state, pos, assigned):
-            """
-            Lấy tập giá trị hợp lệ cho ô tại pos.
-            state: Ma trận hiện tại.
-            pos: Vị trí ô (i,j).
-            assigned: Tập các giá trị đã gán.
-            Trả về: Danh sách các giá trị hợp lệ.
-            """
             domain = []
             for value in range(9):
                 if value not in assigned and self.is_valid_assignment(state, pos, value):
@@ -1002,11 +929,7 @@ class EightPuzzle:
 
         def select_mrv_variable(positions, domains, state):
             """
-            Chọn ô có ít giá trị hợp lệ nhất (MRV), đúng lý thuyết.
-            positions: Danh sách các ô chưa gán.
-            domains: Từ điển chứa tập giá trị hợp lệ.
-            state: Ma trận hiện tại.
-            Trả về: Vị trí ô được chọn.
+            Chọn ô có ít giá trị hợp lệ nhất (MRV)
             """
             min_domain_size = float('inf')
             selected_pos = None
@@ -1020,12 +943,6 @@ class EightPuzzle:
         def select_lcv_value(pos, domain, state, domains, assigned):
             """
             Chọn giá trị ít ràng buộc nhất (LCV), đúng lý thuyết.
-            pos: Vị trí ô đang gán.
-            domain: Tập giá trị hợp lệ của ô.
-            state: Ma trận hiện tại.
-            domains: Từ điển chứa tập giá trị hợp lệ.
-            assigned: Tập các giá trị đã gán.
-            Trả về: Danh sách giá trị sắp xếp theo số giá trị bị loại bỏ (ít nhất đến nhiều nhất).
             """
             value_scores = []
             for value in domain:
@@ -1040,10 +957,6 @@ class EightPuzzle:
         def backtrack_with_fc(state, assigned, positions, domains):
             """
             Hàm đệ quy để thực hiện backtracking với Forward Checking.
-            state: Ma trận hiện tại (có thể chứa None).
-            assigned: Tập các vị trí và giá trị đã gán.
-            positions: Danh sách các ô chưa gán.
-            domains: Từ điển chứa tập giá trị hợp lệ cho các ô.
             """
             if len(assigned) == 9:  # Đã gán hết 9 ô
                 state_tuple = tuple(tuple(row) for row in state)
@@ -1122,35 +1035,22 @@ class EightPuzzle:
 
     def min_conflicts_search(self, max_iterations=1000, max_no_improvement=20, timeout=2.0):
         """
-        Min-Conflicts Search for CSP following the theoretical approach.
-        Starts with unassigned variables, assigns initial values, and iteratively
-        selects a conflicting variable to reassign with a value that minimizes conflicts.
-
-        Args:
-            max_iterations (int): Maximum number of iterations.
-            max_no_improvement (int): Maximum iterations without improvement before restart.
-            timeout (float): Maximum running time in seconds.
-
-        Returns:
-            tuple: (path, num_explored_states) if solution found,
-                   (None, num_explored_states) otherwise.
+        Tìm kiếm Min-Conflicts cho CSP: Bắt đầu từ trạng thái rỗng, gán giá trị ngẫu nhiên,
+        và lặp lại việc sửa các ô xung đột để giảm thiểu số xung đột.
         """
 
         def count_conflicts(state):
             """
-            Count the number of constraint violations in the state.
-
-            Returns:
-                int: Number of conflicts.
+            Đếm số xung đột (vi phạm ràng buộc) trong trạng thái.
             """
             conflicts = 0
             value_counts = defaultdict(int)
 
-            # Constraint: (0,0) must be 1
+            # Ràng buộc: Ô (0,0) phải là 1
             if state[0][0] != 1:
                 conflicts += 1
 
-            # Constraint: Each number appears exactly once
+            # Ràng buộc: Mỗi số chỉ xuất hiện một lần
             for i in range(3):
                 for j in range(3):
                     val = state[i][j]
@@ -1158,21 +1058,21 @@ class EightPuzzle:
                     if value_counts[val] > 1:
                         conflicts += value_counts[val] - 1
 
-            # Row constraint: state[i][j+1] = state[i][j] + 1 (except blank)
+            # Ràng buộc hàng: state[i][j+1] = state[i][j] + 1 (trừ ô trống)
             for i in range(3):
                 for j in range(2):
                     if state[i][j] != 0 and state[i][j + 1] != 0:
                         if state[i][j + 1] != state[i][j] + 1:
                             conflicts += 1
 
-            # Column constraint: state[i+1][j] = state[i][j] + 3 (except blank)
+            # Ràng buộc cột: state[i+1][j] = state[i][j] + 3 (trừ ô trống)
             for j in range(3):
                 for i in range(2):
                     if state[i][j] != 0 and state[i + 1][j] != 0:
                         if state[i + 1][j] != state[i][j] + 3:
                             conflicts += 1
 
-            # Solvability constraint (only check if state is complete)
+            # Ràng buộc solvable (chỉ kiểm tra khi trạng thái đầy đủ)
             if all(state[i][j] is not None for i in range(3) for j in range(3)):
                 if not self.is_solvable(state):
                     conflicts += 1
@@ -1181,20 +1081,17 @@ class EightPuzzle:
 
         def get_conflicting_positions(state):
             """
-            Identify positions that cause conflicts.
-
-            Returns:
-                list: List of (i, j) positions with conflicts.
+            Xác định các ô gây xung đột.
             """
             conflicts = []
             value_counts = defaultdict(int)
             conflict_positions = set()
 
-            # Check (0,0) must be 1
+            # Kiểm tra ràng buộc: Ô (0,0) phải là 1
             if state[0][0] != 1:
                 conflict_positions.add((0, 0))
 
-            # Check unique values
+            # Kiểm tra ràng buộc: Mỗi số chỉ xuất hiện một lần
             for i in range(3):
                 for j in range(3):
                     val = state[i][j]
@@ -1202,7 +1099,7 @@ class EightPuzzle:
                     if value_counts[val] > 1:
                         conflict_positions.add((i, j))
 
-            # Check row constraints
+            # Kiểm tra ràng buộc hàng
             for i in range(3):
                 for j in range(2):
                     if state[i][j] != 0 and state[i][j + 1] != 0:
@@ -1210,7 +1107,7 @@ class EightPuzzle:
                             conflict_positions.add((i, j))
                             conflict_positions.add((i, j + 1))
 
-            # Check column constraints
+            # Kiểm tra ràng buộc cột
             for j in range(3):
                 for i in range(2):
                     if state[i][j] != 0 and state[i + 1][j] != 0:
@@ -1218,7 +1115,7 @@ class EightPuzzle:
                             conflict_positions.add((i, j))
                             conflict_positions.add((i + 1, j))
 
-            # Check solvability
+            # Kiểm tra ràng buộc solvable
             if all(state[i][j] is not None for i in range(3) for j in range(3)):
                 if not self.is_solvable(state):
                     for i in range(3):
@@ -1229,22 +1126,12 @@ class EightPuzzle:
 
         def select_min_conflict_value(state, i, j, current_value, assigned_values):
             """
-            Select a value for position (i, j) that minimizes conflicts, possibly by swapping.
-
-            Args:
-                state: Current state of the puzzle.
-                i, j: Position to assign a value.
-                current_value: Current value at (i, j).
-                assigned_values: Set of values already used.
-
-            Returns:
-                tuple: (new_value, swap_pos) where new_value is the value to assign,
-                       and swap_pos is the position to swap with (or None if no swap).
+            Chọn giá trị hoặc hoán đổi để giảm thiểu xung đột.
             """
             value_scores = []
             state_copy = [row[:] for row in state]
 
-            # Try swapping with other positions
+            # Thử hoán đổi với các ô khác
             for r in range(3):
                 for c in range(3):
                     if (r, c) != (i, j):
@@ -1253,7 +1140,7 @@ class EightPuzzle:
                         conflicts = count_conflicts(state_copy)
                         value_scores.append((conflicts, state[r][c], (r, c)))
 
-            # Try assigning new values not in assigned_values
+            # Thử gán giá trị mới chưa sử dụng
             for value in range(9):
                 if value not in assigned_values - ({current_value} if current_value is not None else set()):
                     if (i, j) == (0, 0) and value != 1:
@@ -1271,15 +1158,12 @@ class EightPuzzle:
 
         def initialize_state():
             """
-            Generate a random initial assignment for all variables.
-
-            Returns:
-                list: A 3x3 matrix with a valid initial assignment.
+            Tạo phép gán ngẫu nhiên cho tất cả các ô.
             """
             state = [[None for _ in range(3)] for _ in range(3)]
             numbers = list(range(9))
             random.shuffle(numbers)
-            state[0][0] = 1  # Enforce (0,0) = 1
+            state[0][0] = 1  # Đảm bảo (0,0) = 1
             numbers.remove(1)
             idx = 0
             for i in range(3):
@@ -1290,6 +1174,7 @@ class EightPuzzle:
             return state
 
         start_time = time.time()
+        # Bắt đầu từ trạng thái ngẫu nhiên
         current_state = initialize_state()
         path = [tuple(tuple(row) for row in current_state)]
         num_explored_states = 1
@@ -1301,15 +1186,15 @@ class EightPuzzle:
 
         for iteration in range(max_iterations):
             if time.time() - start_time > timeout:
-                print("Timeout reached")
+                print("Đã hết thời gian")
                 return None, num_explored_states
 
             current_state_tuple = tuple(tuple(row) for row in current_state)
             conflicts = count_conflicts(current_state)
 
-            # Check if current state is a solution
+            # Kiểm tra nếu trạng thái hiện tại là giải pháp
             if current_state_tuple == self.goal and self.is_solvable(current_state):
-                print(f"Solution found after {iteration} iterations")
+                print(f"Tìm thấy giải pháp sau {iteration} lần lặp")
                 return path, num_explored_states
 
             if conflicts < best_conflicts:
@@ -1319,7 +1204,7 @@ class EightPuzzle:
             else:
                 no_improvement_count += 1
 
-            # Restart with a new random assignment if no improvement
+            # Khởi động lại nếu không cải thiện
             if no_improvement_count >= max_no_improvement:
                 current_state = initialize_state()
                 assigned_values = set(range(9))
@@ -1334,14 +1219,13 @@ class EightPuzzle:
                 no_improvement_count = 0
                 continue
 
-            # Select a conflicting position
+            # Chọn ô có xung đột
             conflicting_positions = get_conflicting_positions(current_state)
             if not conflicting_positions:
                 if conflicts == 0 and self.is_solvable(current_state):
-                    print(f"Solution found after {iteration} iterations")
+                    print(f"Tìm thấy giải pháp sau {iteration} lần lặp")
                     return path, num_explored_states
                 else:
-                    # No conflicts but not a solution, restart
                     current_state = initialize_state()
                     assigned_values = set(range(9))
                     assigned_positions = {(i, j) for i in range(3) for j in range(3)}
@@ -1350,17 +1234,17 @@ class EightPuzzle:
                     num_explored_states += 1
                     continue
 
-            # Randomly select a conflicting position
+            # Chọn ngẫu nhiên một ô có xung đột
             i, j = random.choice(conflicting_positions)
             current_value = current_state[i][j]
 
-            # Select a value (or swap) that minimizes conflicts
+            # Chọn giá trị hoặc hoán đổi để giảm xung đột
             new_value, swap_pos = select_min_conflict_value(current_state, i, j, current_value, assigned_values)
 
             if new_value is None:
                 continue
 
-            # Update state
+            # Cập nhật trạng thái
             current_state_list = [row[:] for row in current_state]
             if swap_pos:
                 r, c = swap_pos
@@ -1375,11 +1259,11 @@ class EightPuzzle:
             path.append(current_state_tuple)
             num_explored_states += 1
 
-        # Check if the best state is a solution
+        # Kiểm tra trạng thái tốt nhất
         if tuple(tuple(row) for row in best_state) == self.goal and self.is_solvable(best_state):
-            print("Returning best state as solution")
+            print("Trả về trạng thái tốt nhất làm giải pháp")
             return path, num_explored_states
-        print("No solution found")
+        print("Không tìm thấy giải pháp")
         return None, num_explored_states
 
     # Định nghĩa q_table toàn cục
@@ -1415,9 +1299,6 @@ class EightPuzzle:
     def q_learning_search(self, max_episodes=1000, max_steps=100):
         """
         Q-Learning Search cho 8-puzzle: Học chính sách di chuyển ô trống để đạt trạng thái mục tiêu.
-        max_episodes: Số tập tối đa.
-        max_steps: Số bước tối đa mỗi tập.
-        Trả về: (path, states_explored) hoặc (None, states_explored) nếu không tìm thấy giải pháp.
         """
         # Kiểm tra tính solvable của initial_state
         if not self.is_solvable(self.initial):
@@ -1915,7 +1796,7 @@ def main_game(initial_state, goal_state):
                 if solution_index < len(solution):
                     draw_grid(solution[solution_index], algo_grid_x, algo_grid_y, algo_tile_size)
                     solution_index += 1
-                    pygame.time.wait(200)  # delay
+                    pygame.time.wait(400)  # delay
                 else:
                     draw_grid(solution[-1], algo_grid_x, algo_grid_y, algo_tile_size)
             else:
@@ -2594,3 +2475,4 @@ if __name__ == "__main__":
             initial_state = initial_state_selector(goal_state)
         else:
             break
+
